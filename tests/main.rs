@@ -1,3 +1,5 @@
+// AN EXAMPLE INPUT TEST FILE
+
 // rust-hidden-tests/hw00_add/tests/hidden_basic.rs
 use hw00_add::add;
 use hw00_add::add_if_nonnegative;

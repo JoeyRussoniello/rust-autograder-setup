@@ -1,28 +1,35 @@
-pub mod textparsers;
-use anyhow::{Context, Result};
-use clap::{Parser, Subcommand};
-use regex::Regex;
-use serde::Serialize;
-use std::{
-    collections::BTreeSet,
-    fs,
-    io::Write,
-    path::{Path, PathBuf},
-};
+use std::path::PathBuf;
 
-#[derive(Debug)]
-pub enum Command{
-    init,
-    build
-}
+use anyhow::Result;
+use clap::{Parser, Subcommand};
+
+pub mod init;
+pub mod build; 
 
 #[derive(Parser, Debug)]
 #[command(name = "auto-setup", version, about = "Autograder helper")]
-struct Cli {
+pub struct Cli {
     /// Root of the Rust project (defaults to current directory)
     #[arg(short, long, default_value = ".")]
-    root: PathBuf,
+    pub root: PathBuf,
 
     #[command(subcommand)]
-    command: Command,
+    pub command: Command,
+}
+
+#[derive(Subcommand, Debug)]
+pub enum Command {
+    /// Scan tests and create tests/autograder.json
+    Init,
+    /// (stub) Build CI YAML from tests/autograder.json
+    Build,
+}
+
+pub fn run() -> Result<()> {
+    let cli = Cli::parse();
+
+    match cli.command {
+        Command::Init => init::run(&cli.root),
+        Command::Build => build::run(&cli.root),
+    }
 }
