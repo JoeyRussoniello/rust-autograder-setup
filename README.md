@@ -5,7 +5,7 @@ A tiny Rust CLI that bootstraps GitHub Classroom autograding for Rust projects.
 - `auto-setup init` scans your `tests/` folder for test functions and creates `tests/autograder.json`.
 - `auto-setup build` reads tests/autograder.json and generates a ready-to-run workflow at `.github/workflows/classroom.yaml`.
 
-Designed for simple, reproducible classroom templates—no hand-editing YAML every assignment.
+Designed for simple, reproducible classroom templates No need to hand-edit YAML for every assignment.
 
 ---
 
@@ -197,3 +197,4 @@ cargo test
 ## Upcoming Features
 
 - Flags to add linting steps to the autograder json and configured YAML
+
