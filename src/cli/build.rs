@@ -28,7 +28,8 @@ pub fn run(root: &Path) -> Result<()>{
     create_dir_all(&workflows_dir)
         .with_context(|| format!("Failed to create {}", workflows_dir.to_string_lossy()))?;
 
-    let workflow_path = workflows_dir.join("classroom.yaml");
+    //.yml used instead of .YAML for github classroom compatibility
+    let workflow_path = workflows_dir.join("classroom.yml");
     
     let mut yaml_compiler = YAMLAutograder::new();
     yaml_compiler.set_preamble(YAML_PREAMBLE.to_string());
