@@ -43,7 +43,7 @@ pub fn run(root: &Path) -> Result<()> {
         .map(|name| AutoTest {
             name,
             timeout: 10,
-            points: 0,
+            points: 1,
         })
         .collect();
 
@@ -84,4 +84,5 @@ fn strip_comments(s: &str) -> String {
     let block = Regex::new(r"(?s)/\*.*?\*/").unwrap().replace_all(s, "");
     let line = Regex::new(r"//.*").unwrap().replace_all(&block, "");
     line.to_string()
+
 }
