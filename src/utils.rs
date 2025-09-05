@@ -65,11 +65,9 @@ pub fn slug_id(name: &str) -> String {
         if c.is_ascii_alphanumeric() {
             s.push(c);
             last_dash = false;
-        } else {
-            if !last_dash {
-                s.push('-');
-                last_dash = true;
-            }
+        } else if !last_dash {
+            s.push('-');
+            last_dash = true;
         }
     }
     // trim leading/trailing dashes

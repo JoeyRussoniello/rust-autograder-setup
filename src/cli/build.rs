@@ -35,14 +35,14 @@ pub fn run(root: &Path) -> Result<()> {
         "Wrote Configured autograder YAML to {}",
         workflow_path.to_string_lossy()
     );
-    return Ok(());
+    Ok(())
 }
 
 fn read_autograder_config(path: &Path) -> Result<Vec<AutoTest>> {
     let file = File::open(path)?;
     let reader = BufReader::new(file);
     let tests = serde_json::from_reader(reader)?;
-    return Ok(tests);
+    Ok(tests)
 }
 
 fn write_workflow(path: &Path, content: &str) -> Result<()> {
@@ -75,11 +75,11 @@ impl YAMLAutograder {
     }
 
     fn set_tests(&mut self, tests: Vec<AutoTest>) {
-        self.tests = tests;
+        self.tests = tests.into_iter().filter(|t| t.points > 0).collect();
         self.ids = Vec::with_capacity(self.tests.len());
     }
 
-    fn compile_test_step(&mut self, test: &AutoTest) {
+    fn compile_test_step(&mut self, test: &AutoTest, cmd: &str) {
         let name = test.name.trim();
         let id = slug_id(name);
         let indent_level = 3;
@@ -94,24 +94,37 @@ impl YAMLAutograder {
             indent_level + 1,
         );
 
+        let full_command = if cmd == "cargo test" {
+            format!("{} {}", cmd, name)
+        } else {
+            cmd.to_string()
+        };
+
         self.insert_autograder_string(
             format!(
-                "test-name: {}\nsetup-command: {}\ncommand: cargo test {}\ntimeout: {}\nmax-score: {}\n", 
+                "test-name: {}\nsetup-command: {}\ncommand: {}\ntimeout: {}\nmax-score: {}\n",
                 yaml_quote(name),
                 yaml_quote(""),
-                name,
+                full_command,
                 test.timeout,
                 test.points
-            ), indent_level + 2
+            ),
+            indent_level + 2,
         );
     }
 
     fn compile_test_steps(&mut self) {
         //Clone tests to avoid an immutable borrow on self
         let tests = self.tests.clone();
+        let clippy_string = String::from("CLIPPY_STYLE_CHECK");
         for test in tests.iter() {
-            self.compile_test_step(test);
-            self.autograder_content.push_str("\n");
+            //? Could move the clippy check into the compile_test_step function, but this is clearer
+            if test.name != clippy_string {
+                self.compile_test_step(test, "cargo test");
+            } else {
+                self.compile_test_step(test, "cargo clippy -- -D warnings");
+            }
+            self.autograder_content.push('\n');
         }
     }
 
@@ -150,6 +163,6 @@ impl YAMLAutograder {
         self.autograder_content.push_str(&self.preamble);
         self.compile_test_steps();
         self.compile_test_reporter();
-        return self.autograder_content.to_string();
+        self.autograder_content.to_string()
     }
 }

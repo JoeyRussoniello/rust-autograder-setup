@@ -33,7 +33,7 @@ pub fn run(root: &Path) -> Result<()> {
         .with_context(|| format!("Failed to create {}", out_dir.to_string_lossy()))?;
     let out_path = out_dir.join("autograder.json");
 
-    let items: Vec<AutoTest> = names
+    let mut items: Vec<AutoTest> = names
         .into_iter()
         .map(|name| AutoTest {
             name,
@@ -41,6 +41,12 @@ pub fn run(root: &Path) -> Result<()> {
             points: 1,
         })
         .collect();
+
+    items.push(AutoTest {
+        name: "CLIPPY_STYLE_CHECK".to_string(),
+        timeout: 10,
+        points: 0,
+    });
 
     let json = serde_json::to_string_pretty(&items)?;
     let mut f = fs::File::create(&out_path)
