@@ -5,8 +5,15 @@ use serde_json;
 use std::fs::{File, create_dir_all};
 use std::io::BufReader;
 
-use crate::utils::ensure_exists;
-use crate::types::AutoTest;
+use crate::utils::{
+    ensure_exists, 
+    slug_id,
+    yaml_quote, 
+    YAML_INDENT, 
+    YAML_PREAMBLE
+};
+
+use crate::types::{AutoTest};
 
 pub fn run(root: &Path) -> Result<()>{
     let autograder_config = root.join("tests").join("autograder.json");
@@ -22,7 +29,11 @@ pub fn run(root: &Path) -> Result<()>{
         .with_context(|| format!("Failed to create {}", workflows_dir.to_string_lossy()))?;
 
     let workflow_path = workflows_dir.join("classroom.yaml");
-    let workflow_content = render_workflow(&tests)?;
+    
+    let mut yaml_compiler = YAMLAutograder::new();
+    yaml_compiler.set_preamble(YAML_PREAMBLE.to_string());
+    yaml_compiler.set_tests(tests);
+    let workflow_content = yaml_compiler.compile();
 
     write_workflow(&workflow_path, &workflow_content)?;
     println!("Wrote Configured autograder YAML to {}", workflow_path.to_string_lossy());
@@ -36,67 +47,6 @@ fn read_autograder_config(path: &Path) -> Result<Vec<AutoTest>> {
     return Ok(tests);
 }
 
-fn render_workflow(tests: &[AutoTest]) -> Result<String> {
-    let mut out = String::new();
-
-    // --- PREAMBLE (fixed) ---
-    out.push_str("name: Autograding Tests\n");
-    out.push_str("on: [push, repository_dispatch]\n\n");
-    out.push_str("permissions:\n");
-    out.push_str("  checks: write\n");
-    out.push_str("  actions: read\n");
-    out.push_str("  contents: read\n\n");
-    out.push_str("jobs:\n");
-    out.push_str("  run-autograding-tests:\n");
-    out.push_str("    runs-on: ubuntu-latest\n");
-    out.push_str("    if: github.actor != 'github-classroom[bot]'\n");
-    out.push_str("    steps:\n");
-    out.push_str("      - name: Checkout code\n");
-    out.push_str("        uses: actions/checkout@v4\n\n");
-    out.push_str("      - name: Install Rust toolchain\n");
-    out.push_str("        uses: dtolnay/rust-toolchain@stable\n");
-    out.push_str("        with:\n");
-    out.push_str("          components: clippy,rustfmt\n\n");
-
-    // --- Test steps ---
-    let mut ids: Vec<String> = Vec::with_capacity(tests.len());
-    for t in tests {
-        let name = t.name.trim();
-        let id = slug_id(name);
-
-        ids.push(id.clone());
-
-        // Step
-        out.push_str(&format!("      - name: {}\n", yaml_quote(name)));
-        out.push_str(&format!("        id: {}\n", id));
-        out.push_str("        uses: classroom-resources/autograding-command-grader@v1\n");
-        out.push_str("        with:\n");
-        out.push_str(&format!("          test-name: {}\n", yaml_quote(name)));
-        out.push_str("          setup-command: \"\"\n");
-        out.push_str(&format!("          command: cargo test {}\n", name));
-        out.push_str(&format!("          timeout: {}\n", t.timeout));
-        out.push_str(&format!("          max-score: {}\n\n", t.points));
-    }
-
-    // --- Reporter step ---
-    out.push_str("      - name: Autograding Reporter\n");
-    out.push_str("        uses: classroom-resources/autograding-grading-reporter@v1\n");
-    out.push_str("        env:\n");
-    for id in &ids {
-        let env_key = format!("{}_RESULTS", id.to_uppercase());
-        out.push_str(&format!(
-            "          {}: \"${{{{steps.{}.outputs.result}}}}\"\n",
-            env_key, id
-        ));
-    }
-    out.push_str("        with:\n");
-    out.push_str("          runners: ");
-    out.push_str(&ids.join(","));
-    out.push('\n');
-
-    Ok(out)
-}
-
 fn write_workflow(path: &Path, content: &str) -> Result<()> {
     let mut f = File::create(path)
         .with_context(|| format!("Failed to create {}", path.to_string_lossy()))?;
@@ -105,30 +55,105 @@ fn write_workflow(path: &Path, content: &str) -> Result<()> {
         .with_context(|| format!("Failed to write {}", path.to_string_lossy()))?;
     Ok(())
 }
-// Lowercase; spaces/non-alnum -> hyphens; collapse/trim hyphens.
-fn slug_id(name: &str) -> String {
-    let mut s = String::new();
-    let mut last_dash = false;
-    for ch in name.chars() {
-        let c = ch.to_ascii_lowercase();
-        if c.is_ascii_alphanumeric() {
-            s.push(c);
-            last_dash = false;
-        } else {
-            if !last_dash {
-                s.push('-');
-                last_dash = true;
-            }
+
+pub struct YAMLAutograder {
+    pub preamble: String,
+    pub autograder_content: String,
+    tests: Vec<AutoTest>,
+    ids: Vec<String>
+}
+impl YAMLAutograder {
+    fn new() -> Self {
+        Self { 
+            preamble: String::new(), 
+            autograder_content: String::new(),
+            tests: Vec::new(),
+            ids: Vec::new()
         }
     }
-    // trim leading/trailing dashes
-    while s.starts_with('-') { s.remove(0); }
-    while s.ends_with('-') { s.pop(); }
-    // collapse multiple dashes already handled by last_dash flag
-    s
-}
 
-// Quote for YAML (simple: double-quote and escape double quotes)
-fn yaml_quote(s: &str) -> String {
-    format!("\"{}\"", s.replace('"', "\\\""))
+    fn set_preamble(&mut self, preamble: String){
+        self.preamble = preamble;
+    }
+
+    fn set_tests(&mut self, tests: Vec<AutoTest>){
+        self.tests = tests;
+        self.ids = Vec::with_capacity(self.tests.len());
+    }
+
+    
+    fn compile_test_step(&mut self, test: &AutoTest){
+        let name = test.name.trim();
+        let id = slug_id(name);
+        let indent_level = 3;
+        self.ids.push(id.clone());
+        
+        self.insert_autograder_string(format!("- name: {}",name),indent_level);
+        self.insert_autograder_string(
+            format!(
+                "id: {}\nuses: classroom-resources/autograding-command-grader@v1\nwith:",
+                id
+            ),indent_level + 1
+        );
+
+        self.insert_autograder_string(
+            format!(
+                "test-name: {}\nsetup-command: {}\ncommand: cargo test {}\ntimeout: {}\nmax-score: {}\n", 
+                yaml_quote(name),
+                yaml_quote(""),
+                name,
+                test.timeout,
+                test.points
+            ), indent_level + 2
+        );
+    }
+
+    fn compile_test_steps(&mut self){
+        //Clone tests to avoid an immutable borrow on self
+        let tests = self.tests.clone();
+        for test in tests.iter(){
+            self.compile_test_step(test);
+            self.autograder_content.push_str("\n");
+        }
+    }
+
+    fn compile_test_reporter(&mut self){
+        let indent_level = 3;
+        self.insert_autograder_string("- name: Autograding Reporter".to_string(), indent_level);
+        self.insert_autograder_string(
+            "uses: classroom-resources/autograding-grading-reporter@v1\nenv:".to_string(),
+            indent_level + 1
+        );
+
+        let ids = self.ids.clone();
+        for id in ids.iter(){
+            let env_key = format!("{}_RESULTS", id.to_uppercase());
+            self.insert_autograder_string(
+                format!("{}: \"${{{{steps.{}.outputs.result}}}}\"", env_key, id), 
+                indent_level + 2
+            );
+        }
+
+        self.insert_autograder_string("with:".to_string(), indent_level + 1);
+        self.insert_autograder_string(
+            format!("runners: {}", self.ids.join(",")), 
+            indent_level + 2
+        );
+    }
+
+    fn insert_autograder_string(&mut self, s: String, indent_level: usize){
+        let indent = YAML_INDENT.repeat(indent_level);
+        //? Could raise error on multi-lines to avoid undetermined behavior
+        for line in s.lines(){
+            self.autograder_content.push_str(&format!("{}{}\n", indent, line));
+        }
+    }
+
+    fn compile(&mut self) -> String{
+        self.autograder_content.clear();
+        self.autograder_content.push_str(&self.preamble);
+        self.compile_test_steps();
+        self.compile_test_reporter();
+        return self.autograder_content.to_string();
+    }
 }
