@@ -2,7 +2,7 @@
 
 [![Latest release](https://img.shields.io/github/v/release/JoeyRussoniello/rust-autograder-setup?display_name=tag&sort=semver)](https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/JoeyRussoniello/rust-autograder-setup/total)](https://github.com/JoeyRussoniello/rust-autograder-setup/releases)
-[![Release status](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yml/badge.svg)](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yml)
+[![Release status](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yaml/badge.svg)](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yaml)
 
 A tiny Rust CLI that bootstraps GitHub Classroom autograding for Rust projects.
 
@@ -259,3 +259,4 @@ cargo test
 
 - Flags to add linting steps to the autograder json and configured YAML
 - Markdown table support to export test cases and documentation to template READMEs
+
