@@ -2,6 +2,7 @@ use anyhow::Result;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+//pub static DEFAULT_POINTS: u32 = 1;
 pub const YAML_PREAMBLE: &str = r#"name: Autograding Tests
 on: [push, repository_dispatch]
 

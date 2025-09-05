@@ -5,7 +5,7 @@ use std::{collections::BTreeSet, fs, io::Write, path::Path};
 use crate::types::AutoTest;
 use crate::utils::{collect_rs_files, ensure_exists};
 
-pub fn run(root: &Path) -> Result<()> {
+pub fn run(root: &Path, num_points: u32, style_check: bool) -> Result<()> {
     let tests_dir = root.join("tests");
     ensure_exists(&tests_dir)?;
 
@@ -38,15 +38,16 @@ pub fn run(root: &Path) -> Result<()> {
         .map(|name| AutoTest {
             name,
             timeout: 10,
-            points: 1,
+            points: num_points,
         })
         .collect();
-
-    items.push(AutoTest {
-        name: "CLIPPY_STYLE_CHECK".to_string(),
-        timeout: 10,
-        points: 0,
-    });
+    if style_check {
+        items.push(AutoTest {
+            name: "CLIPPY_STYLE_CHECK".to_string(),
+            timeout: 10,
+            points: 0,
+        });
+    }
 
     let json = serde_json::to_string_pretty(&items)?;
     let mut f = fs::File::create(&out_path)
