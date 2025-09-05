@@ -1,11 +1,6 @@
-use std::{
-    collections::BTreeSet,
-    fs,
-    io::Write,
-    path::Path,
-};
-use regex::Regex;
 use anyhow::{Context, Result};
+use regex::Regex;
+use std::{collections::BTreeSet, fs, io::Write, path::Path};
 
 use crate::types::AutoTest;
 use crate::utils::{collect_rs_files, ensure_exists};
@@ -56,7 +51,6 @@ pub fn run(root: &Path) -> Result<()> {
     Ok(())
 }
 
-
 /// Very simple extractor:
 /// 1) Strip line/block comments
 /// 2) Find attributes that contain `test` (e.g., #[test], #[tokio::test], #[my::attr(test)])
@@ -84,5 +78,4 @@ fn strip_comments(s: &str) -> String {
     let block = Regex::new(r"(?s)/\*.*?\*/").unwrap().replace_all(s, "");
     let line = Regex::new(r"//.*").unwrap().replace_all(&block, "");
     line.to_string()
-
 }

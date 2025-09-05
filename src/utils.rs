@@ -1,6 +1,6 @@
 use anyhow::Result;
+use std::fs;
 use std::path::{Path, PathBuf};
-use std::{fs, };
 
 pub const YAML_PREAMBLE: &str = r#"name: Autograding Tests
 on: [push, repository_dispatch]
@@ -73,8 +73,12 @@ pub fn slug_id(name: &str) -> String {
         }
     }
     // trim leading/trailing dashes
-    while s.starts_with('-') { s.remove(0); }
-    while s.ends_with('-') { s.pop(); }
+    while s.starts_with('-') {
+        s.remove(0);
+    }
+    while s.ends_with('-') {
+        s.pop();
+    }
     // collapse multiple dashes already handled by last_dash flag
     s
 }

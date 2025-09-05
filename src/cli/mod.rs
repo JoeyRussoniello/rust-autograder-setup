@@ -3,8 +3,8 @@ use std::path::PathBuf;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 
+pub mod build;
 pub mod init;
-pub mod build; 
 
 #[derive(Parser, Debug)]
 #[command(name = "auto-setup", version, about = "Autograder helper")]
