@@ -167,7 +167,6 @@ impl YAMLAutograder {
     }
 }
 
-// src/build.rs (or wherever your build code lives)
 #[cfg(test)]
 mod tests {
     use super::*;
