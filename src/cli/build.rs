@@ -167,7 +167,6 @@ impl YAMLAutograder {
     }
 }
 
-
 // src/build.rs (or wherever your build code lives)
 #[cfg(test)]
 mod tests {
@@ -200,9 +199,21 @@ mod tests {
 
         // 3 tests: two graded, one 0-point clippy which must be pruned
         let tests = vec![
-            AutoTest { name: "test_one".into(), timeout: 30, points: 2 },
-            AutoTest { name: "CLIPPY_STYLE_CHECK".into(), timeout: 45, points: 0 },
-            AutoTest { name: "tokio_async_test".into(), timeout: 40, points: 3 },
+            AutoTest {
+                name: "test_one".into(),
+                timeout: 30,
+                points: 2,
+            },
+            AutoTest {
+                name: "CLIPPY_STYLE_CHECK".into(),
+                timeout: 45,
+                points: 0,
+            },
+            AutoTest {
+                name: "tokio_async_test".into(),
+                timeout: 40,
+                points: 3,
+            },
         ];
         write_autograder_json(root, &tests)?;
 
@@ -232,9 +243,11 @@ mod tests {
         // 4) Reporter env/runners: IDs are slugged from names and uppercased in *_RESULTS
         // slug("test_one") => "test-one"; slug("tokio_async_test") => "tokio-async-test"
         assert!(yaml.contains(r#"TEST-ONE_RESULTS: "${{steps.test-one.outputs.result}}""#));
-        assert!(yaml.contains(
-            r#"TOKIO-ASYNC-TEST_RESULTS: "${{steps.tokio-async-test.outputs.result}}""#
-        ));
+        assert!(
+            yaml.contains(
+                r#"TOKIO-ASYNC-TEST_RESULTS: "${{steps.tokio-async-test.outputs.result}}""#
+            )
+        );
         // Runners list preserves input order (after pruning)
         assert!(yaml.contains("runners: test-one,tokio-async-test"));
 
@@ -247,9 +260,11 @@ mod tests {
         // if CLIPPY has >0 points, it should be included with cargo clippy command.
         let mut ya = YAMLAutograder::new();
         ya.set_preamble(String::new());
-        ya.set_tests(vec![
-            AutoTest { name: "CLIPPY_STYLE_CHECK".into(), timeout: 5, points: 1 }
-        ]);
+        ya.set_tests(vec![AutoTest {
+            name: "CLIPPY_STYLE_CHECK".into(),
+            timeout: 5,
+            points: 1,
+        }]);
         let out = ya.compile();
 
         assert!(out.contains(r#"- name: CLIPPY_STYLE_CHECK"#));
