@@ -197,4 +197,4 @@ cargo test
 ## Upcoming Features
 
 - Flags to add linting steps to the autograder json and configured YAML
-
+- Markdown table support to export test cases and documentation to template READMEs

@@ -1,5 +1,5 @@
 [package]
-name = "auto-setup"
+name = "autograder-setup"
 version = "0.1.0"
 edition = "2024"
 
