@@ -45,7 +45,7 @@ pub fn run(root: &Path, num_points: u32, style_check: bool) -> Result<()> {
         items.push(AutoTest {
             name: "CLIPPY_STYLE_CHECK".to_string(),
             timeout: 10,
-            points: 0,
+            points: num_points,
         });
     }
 
