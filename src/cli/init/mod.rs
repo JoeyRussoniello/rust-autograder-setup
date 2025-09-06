@@ -118,10 +118,7 @@ impl<'ast> Visit<'ast> for TestFinder {
         if has_test_attr(&f.attrs) {
             let name = f.sig.ident.to_string();
             let docstring = collect_docstring(&f.attrs);
-            self.tests.push(Test {
-                name,
-                docstring,
-            });
+            self.tests.push(Test { name, docstring });
         }
         // No need to recurse into fn bodies for this task
     }
