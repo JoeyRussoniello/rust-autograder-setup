@@ -31,16 +31,19 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
             name: "test_one".into(),
             timeout: 30,
             points: 2,
+            docstring: "".into(),
         },
         AutoTest {
             name: "CLIPPY_STYLE_CHECK".into(),
             timeout: 45,
             points: 0,
+            docstring: "".into(),
         },
         AutoTest {
             name: "tokio_async_test".into(),
             timeout: 40,
             points: 3,
+            docstring: "".into(),
         },
     ];
     write_autograder_json(root, &tests)?;
@@ -72,9 +75,7 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
     // slug("test_one") => "test-one"; slug("tokio_async_test") => "tokio-async-test"
     assert!(yaml.contains(r#"TEST-ONE_RESULTS: "${{steps.test-one.outputs.result}}""#));
     assert!(
-        yaml.contains(
-            r#"TOKIO-ASYNC-TEST_RESULTS: "${{steps.tokio-async-test.outputs.result}}""#
-        )
+        yaml.contains(r#"TOKIO-ASYNC-TEST_RESULTS: "${{steps.tokio-async-test.outputs.result}}""#)
     );
     // Runners list preserves input order (after pruning)
     assert!(yaml.contains("runners: test-one,tokio-async-test"));
@@ -92,6 +93,7 @@ fn compile_includes_clippy_command_when_points_positive() {
         name: "CLIPPY_STYLE_CHECK".into(),
         timeout: 5,
         points: 1,
+        docstring: "".into(),
     }]);
     let out = ya.compile();
 
@@ -99,9 +101,11 @@ fn compile_includes_clippy_command_when_points_positive() {
     assert!(out.contains(r#"command: "cargo clippy -- -D warnings""#));
     assert!(out.contains(r#"max-score: 1"#));
     // Reporter wiring should reference the slug id "clippy-style-check"
-    assert!(out.contains(
-        r#"CLIPPY-STYLE-CHECK_RESULTS: "${{steps.clippy-style-check.outputs.result}}""#
-    ));
+    assert!(
+        out.contains(
+            r#"CLIPPY-STYLE-CHECK_RESULTS: "${{steps.clippy-style-check.outputs.result}}""#
+        )
+    );
     assert!(out.contains("runners: clippy-style-check"));
 }
 
@@ -116,8 +120,8 @@ fn read_autograder_config_parses_valid_json_and_errors_on_invalid() -> anyhow::R
     let valid_path = tests_dir.join("autograder.json");
     let valid = r#"
     [
-        {"name":"a","timeout":10,"points":1},
-        {"name":"b","timeout":20,"points":0}
+        {"name":"a","timeout":10,"points":1,"docstring":"test a"},
+        {"name":"b","timeout":20,"points":0,"docstring":""}
     ]
     "#;
     fs::write(&valid_path, valid)?;

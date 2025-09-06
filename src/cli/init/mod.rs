@@ -1,11 +1,11 @@
 use anyhow::{Context, Result};
-use std::{collections::BTreeSet, fs, io::Write, path::Path};
+use std::{fs, io::Write, path::Path};
 
-use syn::{visit::Visit, Attribute, File, Item, ItemFn, Meta};
 use syn::Path as SynPath;
-use syn::punctuated::Punctuated;
-use syn::parse::Parser;
 use syn::Token;
+use syn::parse::Parser;
+use syn::punctuated::Punctuated;
+use syn::{Attribute, Expr, File, Item, ItemFn, Lit, Meta, visit::Visit};
 
 use crate::types::AutoTest;
 use crate::utils::{collect_rs_files, ensure_exists};
@@ -23,16 +23,18 @@ pub fn run(root: &Path, num_points: u32, style_check: bool) -> Result<()> {
         anyhow::bail!("No `.rs` files found under {}", tests_dir.to_string_lossy());
     }
 
-    let mut names: BTreeSet<String> = BTreeSet::new();
+    let mut tests: Vec<Test> = Vec::new();
     for file in files {
         let src = fs::read_to_string(&file)
             .with_context(|| format!("Failed to read {}", file.to_string_lossy()))?;
-        for n in extract_test_names(&src) {
-            names.insert(n);
-        }
+
+        let file_tests = extract_tests(&src)
+            .with_context(|| format!("Failed to parse {}", file.to_string_lossy()))?;
+
+        file_tests.iter().for_each(|t| tests.push(t.clone()));
     }
 
-    if names.is_empty() {
+    if tests.is_empty() {
         anyhow::bail!("Found no test functions (looked for #[test]/#[...::test])");
     }
 
@@ -41,12 +43,13 @@ pub fn run(root: &Path, num_points: u32, style_check: bool) -> Result<()> {
         .with_context(|| format!("Failed to create {}", out_dir.to_string_lossy()))?;
     let out_path = out_dir.join("autograder.json");
 
-    let mut items: Vec<AutoTest> = names
+    let mut items: Vec<AutoTest> = tests
         .into_iter()
-        .map(|name| AutoTest {
-            name,
+        .map(|test| AutoTest {
+            name: test.name,
             timeout: 10,
             points: num_points,
+            docstring: test.docstring,
         })
         .collect();
     if style_check {
@@ -54,6 +57,7 @@ pub fn run(root: &Path, num_points: u32, style_check: bool) -> Result<()> {
             name: "CLIPPY_STYLE_CHECK".to_string(),
             timeout: 10,
             points: num_points,
+            docstring: "cargo clippy style check".to_string(),
         });
     }
 
@@ -66,7 +70,6 @@ pub fn run(root: &Path, num_points: u32, style_check: bool) -> Result<()> {
     Ok(())
 }
 
-
 ///  Extractor using `syn`:
 /// 1) Parse the file into an AST
 /// 2) Visit all inline modules and free functions
@@ -74,22 +77,24 @@ pub fn run(root: &Path, num_points: u32, style_check: bool) -> Result<()> {
 ///    - whose path's last segment is `test` (e.g., `#[test]`, `#[tokio::test]`)
 ///    - OR a `cfg_attr(...)` where any *applied* attribute ends with `test`
 ///       (we skip the first cfg predicate arg and inspect the rest)
-pub fn extract_test_names(src: &str) -> Vec<String> {
-    //! Rewrite using anyhow
-    let file: File = match syn::parse_file(src) {
-        Ok(f) => f,
-        Err(_) => return Vec::new(),
-
-    };
+pub fn extract_tests(src: &str) -> Result<Vec<Test>> {
+    let file: File =
+        syn::parse_file(src).map_err(|e| anyhow::anyhow!("failed to parse Rust source: {}", e))?;
 
     let mut finder = TestFinder::default();
     finder.visit_file(&file);
-    finder.names
+    Ok(finder.tests)
+}
+
+#[derive(Clone)]
+pub struct Test {
+    name: String,
+    docstring: String,
 }
 
 #[derive(Default)]
 struct TestFinder {
-    names: Vec<String>,
+    tests: Vec<Test>,
 }
 
 impl<'ast> Visit<'ast> for TestFinder {
@@ -111,7 +116,12 @@ impl<'ast> Visit<'ast> for TestFinder {
 
     fn visit_item_fn(&mut self, f: &'ast ItemFn) {
         if has_test_attr(&f.attrs) {
-            self.names.push(f.sig.ident.to_string());
+            let name = f.sig.ident.to_string();
+            let docstring = collect_docstring(&f.attrs);
+            self.tests.push(Test {
+                name,
+                docstring,
+            });
         }
         // No need to recurse into fn bodies for this task
     }
@@ -149,7 +159,10 @@ fn attr_is_test(attr: &Attribute) -> bool {
 }
 
 fn path_ends_with(path: &SynPath, ident: &str) -> bool {
-    path.segments.last().map(|s| s.ident == ident).unwrap_or(false)
+    path.segments
+        .last()
+        .map(|s| s.ident == ident)
+        .unwrap_or(false)
 }
 
 fn meta_ends_with_test(meta: &Meta) -> bool {
@@ -173,4 +186,28 @@ fn meta_ends_with_test(meta: &Meta) -> bool {
     }
 }
 
+fn collect_docstring(attrs: &[Attribute]) -> String {
+    let mut buf = String::new();
 
+    for attr in attrs {
+        // Only care about #[doc = "..."]
+        let Meta::NameValue(nv) = &attr.meta else {
+            continue;
+        };
+        if !nv.path.is_ident("doc") {
+            continue;
+        }
+
+        let Expr::Lit(expr_lit) = &nv.value else {
+            continue;
+        };
+        let Lit::Str(s) = &expr_lit.lit else { continue };
+
+        if !buf.is_empty() {
+            buf.push('\n');
+        }
+        buf.push_str(&s.value());
+    }
+
+    buf.trim().to_string()
+}

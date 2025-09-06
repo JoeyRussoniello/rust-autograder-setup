@@ -1,6 +1,16 @@
-use super::extract_test_names;
+use super::{Test, extract_tests};
 
-fn sorted(mut v: Vec<String>) -> Vec<String> {
+/// Helper function for test cases
+fn extract_test_names(src: &str) -> Vec<String> {
+    extract_tests(src)
+        .expect("Error parsing file")
+        .iter()
+        .map(|t| t.name.clone())
+        .collect()
+}
+
+fn sorted(names: Vec<String>) -> Vec<String> {
+    let mut v = names.clone();
     v.sort();
     v
 }
@@ -127,7 +137,10 @@ fn multiple_attrs_on_same_fn() {
         #[tokio::test]
         async fn with_doc() {}
     "#;
-    assert_eq!(sorted(extract_test_names(src)), vec!["Kebab__ok", "with_doc"]);
+    assert_eq!(
+        sorted(extract_test_names(src)),
+        vec!["Kebab__ok", "with_doc"]
+    );
 }
 
 #[test]
@@ -200,3 +213,163 @@ fn many_in_one_file() {
     );
 }
 
+fn by_name<'a>(tests: &'a [Test], name: &str) -> &'a Test {
+    tests.iter().find(|t| t.name == name).unwrap_or_else(|| {
+        panic!(
+            "test `{}` not found in {:?}",
+            name,
+            tests.iter().map(|t| &t.name).collect::<Vec<_>>()
+        )
+    })
+}
+
+#[test]
+fn single_line_doc_on_plain_test() {
+    let src = r#"
+        /// adds two positive numbers
+        #[test]
+        fn add_simple() {}
+    "#;
+
+    let tests = extract_tests(src).expect("Error parsing file");
+    let t = by_name(&tests, "add_simple");
+    assert_eq!(t.docstring, "adds two positive numbers");
+}
+
+#[test]
+fn multi_line_doc_triple_slash() {
+    let src = r#"
+        /// first line
+        /// second line
+        /// third line
+        #[test]
+        fn multi() {}
+    "#;
+
+    let tests = extract_tests(src).expect("Error parsing file");
+    let t = by_name(&tests, "multi");
+    assert_eq!(t.docstring, "first line\n second line\n third line");
+}
+
+#[test]
+fn block_doc_comment_preserved() {
+    let src = r#"
+        /** 
+         * line one
+         * line two
+         * line three
+         */
+        #[test]
+        fn blocky() {}
+    "#;
+
+    let tests = extract_tests(src).expect("Error parsing file");
+    let t = &tests[0];
+
+    // Rust translates block doc comments to multiple #[doc="..."] lines.
+    // Leading asterisks/spaces are normalized by the lexer; expect lines joined by '\n'.
+    assert_eq!(t.name, "blocky");
+    assert!(t.docstring.contains("line one"));
+    assert!(t.docstring.contains("line two"));
+    assert!(t.docstring.contains("line three"));
+}
+
+#[test]
+fn doc_with_namespaced_test_and_async() {
+    let src = r#"
+        /// runs on tokio runtime
+        #[tokio::test(flavor = "current_thread")]
+        async fn tok() {}
+    "#;
+
+    let tests = extract_tests(src).expect("Error parsing file");
+    let t = by_name(&tests, "tok");
+    assert_eq!(t.docstring, "runs on tokio runtime");
+}
+
+#[test]
+fn ignores_non_doc_attributes() {
+    let src = r#"
+        #[allow(non_snake_case)]
+        /// the doc should be captured, not allow(...)
+        #[test]
+        fn MixedCase() {}
+    "#;
+
+    let tests = extract_tests(src).expect("Error parsing file");
+    let t = by_name(&tests, "MixedCase");
+    assert_eq!(t.docstring, "the doc should be captured, not allow(...)");
+}
+
+#[test]
+fn empty_doc_when_absent() {
+    let src = r#"
+        #[test]
+        fn no_docs() {}
+    "#;
+
+    let tests = extract_tests(src).expect("Error parsing file");
+    let t = by_name(&tests, "no_docs");
+    assert_eq!(t.docstring, "");
+}
+
+#[test]
+fn preserves_order_and_newlines_exactly() {
+    let src = r#"
+        /// alpha
+        ///
+        /// gamma
+        #[test]
+        fn spaced() {}
+    "#;
+
+    let tests = extract_tests(src).expect("Error parsing file");
+    let t = by_name(&tests, "spaced");
+    // Blank /// line becomes an empty #[doc=""] → yields a lone '\n' between alpha and gamma.
+    assert!(t.docstring.contains("alpha"));
+    assert!(t.docstring.contains("gamma"));
+    assert!(t.docstring.contains("\n\n"));
+}
+
+#[test]
+fn inline_mods_collect_their_docs() {
+    let src = r#"
+        mod inner {
+            /// inner doc
+            #[test]
+            fn inner_test() {}
+            mod deeper {
+                /// deeper doc
+                #[tokio::test] async fn deep_test() {}
+            }
+        }
+
+        /// top doc
+        #[test]
+        fn top() {}
+    "#;
+
+    let tests = extract_tests(src).expect("Error parsing file");
+    let names_docs: Vec<(&str, &str)> = tests
+        .iter()
+        .map(|t| (t.name.as_str(), t.docstring.as_str()))
+        .collect();
+
+    assert!(names_docs.contains(&("inner_test", "inner doc")));
+    assert!(names_docs.contains(&("deep_test", "deeper doc")));
+    assert!(names_docs.contains(&("top", "top doc")));
+}
+
+#[test]
+fn doc_attribute_form_is_supported() {
+    let src = r#"
+        #[doc = "first"]
+        #[doc = "second"]
+        #[test]
+        fn explicit_attr() {}
+    "#;
+
+    let tests = extract_tests(src).expect("Error parsing file");
+    let t = by_name(&tests, "explicit_attr");
+    assert_eq!(t.docstring, "first\nsecond");
+}
