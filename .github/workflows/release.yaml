@@ -1,4 +1,4 @@
-name: 🛠️ Build and Release autograder-setup
+name: 🚀 Publish
 
 on:
   push:
