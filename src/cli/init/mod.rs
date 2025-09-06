@@ -74,9 +74,9 @@ pub fn run(root: &Path, num_points: u32, style_check: bool) -> Result<()> {
 /// 1) Parse the file into an AST
 /// 2) Visit all inline modules and free functions
 /// 3) A function is a test if it has an attribute:
-///    - whose path's last segment is `test` (e.g., `#[test]`, `#[tokio::test]`)
-///    - OR a `cfg_attr(...)` where any *applied* attribute ends with `test`
-///       (we skip the first cfg predicate arg and inspect the rest)
+/// - whose path's last segment is `test` (e.g., `#[test]`, `#[tokio::test]`)
+/// - OR a `cfg_attr(...)` where any *applied* attribute ends with `test`
+/// - we skip the first cfg predicate arg and inspect the rest
 pub fn extract_tests(src: &str) -> Result<Vec<Test>> {
     let file: File =
         syn::parse_file(src).map_err(|e| anyhow::anyhow!("failed to parse Rust source: {}", e))?;

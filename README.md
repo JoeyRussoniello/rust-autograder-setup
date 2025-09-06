@@ -149,13 +149,14 @@ Schema:
 | name    | string | yes      | Display name in the workflow and test filter |
 | timeout | number | yes      | Seconds for the autograder step (default 10) |
 | points  | number | yes      | Max score for this test (default 1)          |
+| docstring| string| yes      | The docstring pulled from the test case      |
 
 Example:
 
 ```json
 [
-  { "name": "test_func_1", "timeout": 10, "points": 1 },
-  { "name": "test_func_2", "timeout": 10, "points": 1 }
+  { "name": "test_func_1", "timeout": 10, "points": 1, "docstring": "a test function"},
+  { "name": "test_func_2", "timeout": 10, "points": 1, "docstring": ""}
 ]
 ```
 
@@ -258,18 +259,24 @@ jobs:
 
 ```bash
 .
+├── Cargo.lock
 ├── Cargo.toml
-├── src
-│   ├── cli
-│   │   ├── build.rs  # renders the workflow yaml
-│   │   ├── init.rs   # scans tests and writes autograder.json
-│   │   └── mod.rs    
-│   ├── main.rs
-│   ├── types.rs      # Shared Structs (AutoTest)
-│   └── utils.rs      # Shared Utility Functions (file walking/checking)
-└── tests
-    ├── autograder.json
-    └── main.rs
+├── LICENSE
+├── README.md
+└── src
+    ├── cli
+    │   ├── build             # renders the workflow yaml
+    │   │   ├── mod.rs
+    │   │   └── tests.rs
+    │   ├── init              # scans tests and writes autograder.json
+    │   │   ├── mod.rs
+    │   │   └── tests.rs
+    │   └── mod.rs
+    ├── main.rs
+    ├── types.rs            # Shared Structs (AutoTest)
+    └── utils
+        ├── mod.rs          # Shared Utility Functions (file walking/checking)
+        └── tests.rs
 ```
 
 ---
@@ -279,4 +286,3 @@ jobs:
 - Markdown table support to export test cases and documentation to template READMEs
 - Additional CLI improvements and configuration options
 - Publish to `crates.io` for installation via `cargo install autograder-setup`
-
