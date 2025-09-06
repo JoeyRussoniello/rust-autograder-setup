@@ -45,9 +45,11 @@ pub struct InitArgs {
     pub no_style_check: bool,
 }
 
-#[derive(Args, Debug, Default)]
+#[derive(Args, Debug)]
 pub struct BuildArgs {
-    // Intentionally empty: build has no flags.
+    /// Root of the Rust project (defaults to current directory)
+    #[arg(short, long, default_value = ".")]
+    pub root: PathBuf,
 }
 
 pub fn run() -> Result<()> {
@@ -62,7 +64,7 @@ pub fn run() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use clap::{Parser, CommandFactory};
+    use clap::{CommandFactory, Parser};
 
     #[test]
     fn verify_cli_schema() {
