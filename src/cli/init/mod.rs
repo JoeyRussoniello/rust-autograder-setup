@@ -70,7 +70,7 @@ pub fn run(root: &Path, num_points: u32, style_check: bool) -> Result<()> {
     Ok(())
 }
 
-///  Extractor using `syn`:
+///  Extractor using `syn` AST parsing and visiting:
 /// 1) Parse the file into an AST
 /// 2) Visit all inline modules and free functions
 /// 3) A function is a test if it has an attribute:
