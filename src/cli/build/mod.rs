@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use std::path::Path;
 
+use crate::utils::{YAML_INDENT, YAML_PREAMBLE, read_autograder_config, slug_id, yaml_quote};
 use std::fs::{File, create_dir_all};
-use crate::utils::{YAML_INDENT, YAML_PREAMBLE, slug_id, yaml_quote, read_autograder_config};
 
 use crate::types::AutoTest;
 

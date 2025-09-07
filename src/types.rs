@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use markdown_tables::MarkdownTableRow;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AutoTest {

@@ -64,7 +64,7 @@ pub struct TableArgs {
 
     /// Do not copy the table to clipboard (print to terminal instead)
     #[arg(long = "no-clipboard")]
-    pub no_clipboard: bool
+    pub no_clipboard: bool,
 }
 
 pub fn run() -> Result<()> {
