@@ -11,7 +11,7 @@ pub fn run(root: &Path, to_clipboard: bool, write_to_readme: bool) -> Result<()>
 
     let table = as_table(&tests);
 
-    if to_clipboard && !write_to_readme{
+    if to_clipboard && !write_to_readme {
         cli_clipboard::set_contents(table.clone()).expect("copy to clipbard");
         println!("Table copied to clipboard:");
     } else {
