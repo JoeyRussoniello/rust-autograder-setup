@@ -1,6 +1,8 @@
 use anyhow::Result;
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::io::BufReader;
+use crate::types::AutoTest;
 
 //pub static DEFAULT_POINTS: u32 = 1;
 pub const YAML_PREAMBLE: &str = r#"name: Autograding Tests
@@ -55,6 +57,20 @@ pub fn ensure_exists(tests_dir: &Path) -> Result<()> {
         );
     }
     Ok(())
+}
+
+pub fn read_autograder_config(root: &Path) -> Result<Vec<AutoTest>> {
+    let path = root.join("tests").join("autograder.json");
+    ensure_exists(&path)?;
+    let file = fs::File::open(path)?;
+    let reader = BufReader::new(file);
+    let tests: Vec<AutoTest> = serde_json::from_reader(reader)?;
+
+    if tests.is_empty() {
+        anyhow::bail!("Autograder.json config not configured. Add tests using `auto-setup init`");
+    }
+
+    Ok(tests)
 }
 
 // Lowercase; spaces/non-alnum -> hyphens; collapse/trim hyphens.
