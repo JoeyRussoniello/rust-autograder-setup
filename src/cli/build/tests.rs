@@ -122,7 +122,7 @@ fn read_autograder_config_parses_valid_json_and_errors_on_invalid() -> anyhow::R
         r#"[{"name":"a","timeout":10,"points":1,"docstring":"test a"},
             {"name":"b","timeout":20,"points":0,"docstring":""}]"#,
     )?;
-    let v = super::read_autograder_config(root)?;        // <-- pass root
+    let v = super::read_autograder_config(root)?; // <-- pass root
     assert_eq!(v.len(), 2);
     assert_eq!(v[0].name, "a");
     assert_eq!(v[1].points, 0);
@@ -138,7 +138,6 @@ fn read_autograder_config_parses_valid_json_and_errors_on_invalid() -> anyhow::R
 
     Ok(())
 }
-
 
 #[test]
 fn write_workflow_creates_file_and_is_recoverable() -> anyhow::Result<()> {
