@@ -6,6 +6,7 @@ use clap::{Args, Parser, Subcommand};
 
 pub mod build;
 pub mod init;
+pub mod table;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -28,6 +29,9 @@ pub enum Command {
 
     /// Build CI YAML from tests/autograder.json
     Build(BuildArgs),
+
+    /// Get a table of test names, docstrings, and points for assignment READMEs
+    Table(TableArgs),
 }
 
 #[derive(Args, Debug)]
@@ -52,12 +56,24 @@ pub struct BuildArgs {
     pub root: PathBuf,
 }
 
+#[derive(Args, Debug)]
+pub struct TableArgs {
+    /// Root of the Rust project (defaults to current directory)
+    #[arg(short, long, default_value = ".")]
+    pub root: PathBuf,
+
+    /// Do not copy the table to clipboard (print to terminal instead)
+    #[arg(long = "no-clipboard")]
+    pub no_clipboard: bool
+}
+
 pub fn run() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Command::Init(a) => init::run(&a.root, a.default_points, !a.no_style_check),
         // Build has no args; default to current dir root like init would.
-        Command::Build(_) => build::run(&PathBuf::from(".")),
+        Command::Build(a) => build::run(&a.root),
+        Command::Table(a) => table::run(&a.root, !a.no_clipboard),
     }
 }
 

@@ -1,22 +1,13 @@
 use anyhow::{Context, Result};
 use std::path::Path;
 
-use serde_json;
 use std::fs::{File, create_dir_all};
-use std::io::BufReader;
-
-use crate::utils::{YAML_INDENT, YAML_PREAMBLE, ensure_exists, slug_id, yaml_quote};
+use crate::utils::{YAML_INDENT, YAML_PREAMBLE, slug_id, yaml_quote, read_autograder_config};
 
 use crate::types::AutoTest;
 
 pub fn run(root: &Path) -> Result<()> {
-    let autograder_config = root.join("tests").join("autograder.json");
-    ensure_exists(&autograder_config)?;
-    let tests = read_autograder_config(&autograder_config)?;
-
-    if tests.is_empty() {
-        anyhow::bail!("Autograder.json config not configured. Add tests using `auto-setup init`");
-    }
+    let tests = read_autograder_config(root)?;
 
     let workflows_dir = root.join(".github").join("workflows");
     create_dir_all(&workflows_dir)
@@ -36,13 +27,6 @@ pub fn run(root: &Path) -> Result<()> {
         workflow_path.to_string_lossy()
     );
     Ok(())
-}
-
-fn read_autograder_config(path: &Path) -> Result<Vec<AutoTest>> {
-    let file = File::open(path)?;
-    let reader = BufReader::new(file);
-    let tests = serde_json::from_reader(reader)?;
-    Ok(tests)
 }
 
 fn write_workflow(path: &Path, content: &str) -> Result<()> {
