@@ -15,7 +15,7 @@ impl MarkdownTableRow for AutoTest {
 
     fn column_values(&self) -> Vec<String> {
         vec![
-            self.name.clone(),
+            format!("`{}`", self.name),
             self.points.to_string(),
             self.docstring.clone(),
         ]
