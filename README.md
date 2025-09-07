@@ -29,6 +29,7 @@ Keeps autograding setup **simple for instructors** while making grading criteria
   - [Command Reference](#command-reference)
     - [init](#init)
     - [build](#build)
+    - [table](#table)
 - [Repository Structure](#repository-structure)
 - [Upcoming Features](#upcoming-features)
 
@@ -269,8 +270,14 @@ By default, the table is copied to the clipboard. Use  `--no-clipboard` to print
 Options:
 
 ```bash
--r, --root <path>        Project root (default: .)
-    --no-clipboard       Do not copy the table to clipboard (print to terminal instead)
+  -r, --root <ROOT>
+          Root of the Rust project (defaults to current directory) [default: .]
+      --no-clipboard
+          Do not copy the table to clipboard (print to terminal instead)
+      --to-readme
+          Append the table to the end of README.md
+  -h, --help
+          Print help
 ```
 
 Examples:
@@ -282,8 +289,8 @@ autograder-setup table
 # Print table to stdout
 autograder-setup table --no-clipboard
 
-# Run against another directory
-autograder-setup table --root ../student-assignment
+# Run against another directory and append the table to the readme directly
+autograder-setup table --root ../student-assignment --to-readme
 ```
 
 **Markdown Output**

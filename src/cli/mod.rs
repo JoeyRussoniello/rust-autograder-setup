@@ -65,6 +65,10 @@ pub struct TableArgs {
     /// Do not copy the table to clipboard (print to terminal instead)
     #[arg(long = "no-clipboard")]
     pub no_clipboard: bool,
+
+    /// Append the table to the end of README.md
+    #[arg(long = "to-readme")]
+    pub to_readme: bool,
 }
 
 pub fn run() -> Result<()> {
@@ -73,7 +77,7 @@ pub fn run() -> Result<()> {
         Command::Init(a) => init::run(&a.root, a.default_points, !a.no_style_check),
         // Build has no args; default to current dir root like init would.
         Command::Build(a) => build::run(&a.root),
-        Command::Table(a) => table::run(&a.root, !a.no_clipboard),
+        Command::Table(a) => table::run(&a.root, !a.no_clipboard, a.to_readme),
     }
 }
 
