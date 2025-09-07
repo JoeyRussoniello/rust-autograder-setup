@@ -7,10 +7,11 @@
 
 A tiny Rust CLI that bootstraps GitHub Classroom autograding for Rust projects.
 
-- `autograder-setup init` scans your `tests/` folder for test functions and creates `tests/autograder.json`.
-- `autograder-setup build` reads tests/autograder.json and generates a ready-to-run workflow at `.github/workflows/classroom.yaml`.
+- `autograder-setup init` scans your `tests/` folder and builds a `tests/autograder.json` config, making it quick and consistent to set up assignments without manually tracking test cases.  
+- `autograder-setup build` turns that config into a ready-to-run GitHub Actions workflow at `.github/workflows/classroom.yaml`, so you don’t need to hand-edit YAML for every homework.  
+- `autograder-setup table` reads `tests/autograder.json` and generates a Markdown table for assignment READMEs, giving students a transparent overview of each test, its purpose, and its point value.  
 
-Designed for simple, reproducible classroom templates. No need to hand-edit YAML for every assignment.
+Keeps autograding setup **simple for instructors** while making grading criteria **transparent for students**.
 
 ---
 
@@ -116,6 +117,7 @@ To see flags for a specific command:
 ```bash
 autograder-setup init --help
 autograder-setup build --help
+autograder-setup table --help
 ```
 
 ### Command Reference
@@ -159,6 +161,8 @@ Example:
   { "name": "test_func_2", "timeout": 10, "points": 1, "docstring": ""}
 ]
 ```
+
+---
 
 #### `build`
 
@@ -255,6 +259,43 @@ jobs:
           runners: basic-add-small-numbers,basic-add-with-negatives,clippy-style-check
 ```
 
+---
+
+#### `table`
+
+Reads `tests/autograder.json` and generates a Markdown table of test names, docstrings, and points.
+By default, the table is copied to the clipboard. Use  `--no-clipboard` to print to stdout instead.
+
+Options:
+
+```bash
+-r, --root <path>        Project root (default: .)
+    --no-clipboard       Do not copy the table to clipboard (print to terminal instead)
+```
+
+Examples:
+
+```bash
+# Copy a table to clipboard (default)
+autograder-setup table
+
+# Print table to stdout
+autograder-setup table --no-clipboard
+
+# Run against another directory
+autograder-setup table --root ../student-assignment
+```
+
+**Markdown Output**
+Example Table for an assigment
+
+| Test name              | Description                            | Points |
+|------------------------|----------------------------------------|--------|
+| add_core               | Add function works in the core case    | 10     |
+| add_small_numbers      | Add function works with small numbers  | 5      |
+| add_with_negatives     | Add function handles negative inputs   | 3      |
+| clippy_style_check     | Clippy linting check                   | 2      |
+
 ## Repository Structure
 
 ```bash
@@ -265,17 +306,19 @@ jobs:
 ├── README.md
 └── src
     ├── cli
-    │   ├── build             # renders the workflow yaml
+    │   ├── build           # renders the workflow yaml
     │   │   ├── mod.rs
     │   │   └── tests.rs
-    │   ├── init              # scans tests and writes autograder.json
+    │   ├── init            # scans tests and writes autograder.json
     │   │   ├── mod.rs
     │   │   └── tests.rs
-    │   └── mod.rs
+    │   ├── table           # scans tests and creates a markdown table
+    │   │   ├── mod.rs
+    │   └── mod.rs          # Core CLI logic (arg parsing, documentation)
     ├── main.rs
     ├── types.rs            # Shared Structs (AutoTest)
-    └── utils
-        ├── mod.rs          # Shared Utility Functions (file walking/checking)
+    └── utils               # Shared Utility Functions (file walking/checking)
+        ├── mod.rs          
         └── tests.rs
 ```
 
@@ -283,6 +326,5 @@ jobs:
 
 ## Upcoming Features
 
-- Markdown table support to export test cases and documentation to template READMEs
 - Additional CLI improvements and configuration options
 - Publish to `crates.io` for installation via `cargo install autograder-setup`
