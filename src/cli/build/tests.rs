@@ -117,24 +117,20 @@ fn read_autograder_config_parses_valid_json_and_errors_on_invalid() -> anyhow::R
     fs::create_dir_all(&tests_dir)?;
 
     // Valid JSON
-    let valid_path = tests_dir.join("autograder.json");
-    let valid = r#"
-    [
-        {"name":"a","timeout":10,"points":1,"docstring":"test a"},
-        {"name":"b","timeout":20,"points":0,"docstring":""}
-    ]
-    "#;
-    fs::write(&valid_path, valid)?;
-    let v = super::read_autograder_config(&valid_path)?;
+    fs::write(
+        tests_dir.join("autograder.json"),
+        r#"[{"name":"a","timeout":10,"points":1,"docstring":"test a"},
+            {"name":"b","timeout":20,"points":0,"docstring":""}]"#,
+    )?;
+    let v = super::read_autograder_config(root)?;        // <-- pass root
     assert_eq!(v.len(), 2);
     assert_eq!(v[0].name, "a");
     assert_eq!(v[1].points, 0);
 
-    // Invalid JSON
-    let invalid_path = tests_dir.join("autograder_bad.json");
-    fs::write(&invalid_path, "not json")?;
-    let err = super::read_autograder_config(&invalid_path).unwrap_err();
-    let msg = format!("{err}");
+    // Invalid JSON (overwrite the same file with bad contents)
+    fs::write(tests_dir.join("autograder.json"), "not json")?;
+    let err = super::read_autograder_config(root).unwrap_err();
+    let msg = err.to_string();
     assert!(
         msg.contains("expected value") || msg.contains("EOF") || msg.contains("at line"),
         "unexpected error: {msg}"
@@ -142,6 +138,7 @@ fn read_autograder_config_parses_valid_json_and_errors_on_invalid() -> anyhow::R
 
     Ok(())
 }
+
 
 #[test]
 fn write_workflow_creates_file_and_is_recoverable() -> anyhow::Result<()> {
