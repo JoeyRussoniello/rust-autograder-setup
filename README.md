@@ -9,8 +9,6 @@
 
 </div>
 
-
-
 A tiny Rust CLI that bootstraps GitHub Classroom autograding for Rust projects.
 
 - `autograder-setup init` scans your `tests/` folder and builds a `tests/autograder.json` config, making it quick and consistent to set up assignments without manually tracking test cases.  
@@ -136,18 +134,44 @@ Scans `tests/` (recursively), finds test functions, and writes `tests/autograder
 Options:
 
 ```bash
--r, --root <path>        Project root (default: .)
-    --default-points <n> Default points per test (default: 1)
-    --no-style-check     Disable Clippy style checks (enabled by default)
+-r, --root <ROOT>
+        Root of the Rust project (defaults to current directory) [default: .]
+    --default-points <DEFAULT_POINTS>
+        Default number of points per test [default: 1]
+    --no-style-check
+        Disable the Clippy style check (enabled by default)
+    --no-commit-count
+        Disable Commit Counting (enabled by default)
+    --num-commit-checks <NUM_COMMIT_CHECKS>
+        Number of commit count checks (default: 1) [default: 1]
+-h, --help
+        Print help
 ```
 
 Examples:
 
 ```bash
+# Init an autograder.json in ../student-assignment/tests
 autograder-setup init --root ../student-assignment
+
 autograder-setup init --default-points 5
+
+# Omit the style check or commit counting steps of the autograder build
 autograder-setup init --no-style-check
+autograder-setup init --no-commit-count
+
+# Create multiple commit check steps for awarding partial credit
+autograder-setup init --num-commit-checks 3
 ```
+
+>Note: When commit counting is enabled, the generator creates separate checks for each threshold up to num-commit-checks.
+> For example, --num-commit-checks 3 would produce three independent checks:
+>
+> - 1 point for reaching 1 commits
+> - 1 point for reaching 2 commits
+> - 1 point for reaching 3 commits
+> The number of commits required earn a point can be tweaked in `autograder.json`
+> This lets you award partial credit as students make more commits.
 
 ##### JSON Output
 
@@ -159,21 +183,23 @@ Schema:
 | timeout | number | yes      | Seconds for the autograder step (default 10) |
 | points  | number | yes      | Max score for this test (default 1)          |
 | docstring| string| yes      | The docstring pulled from the test case      |
+| num_commits | number | no | The number of commits required to earn points for a `COMMIT_COUNT` step |
 
 Example:
 
 ```json
 [
-  { "name": "test_func_1", "timeout": 10, "points": 1, "docstring": "a test function"},
-  { "name": "test_func_2", "timeout": 10, "points": 1, "docstring": ""}
-]
+  { "name": "test_func_1", "timeout": 10, "points": 1, "docstring": "a test function", "num_commits": null},
+  { "name": "COMMIT_COUNT_0", "timeout": 10, "points": 1, "docstring": "Ensures at least ## commits.", "num_commits": 5}
+] 
 ```
 
+> Note: The `##` characters in `COMMIT_COUNT` steps can be left as-is, and will be replaced on `autograder-setup table` runs
 ---
 
 #### `build`
 
-Generates `.github/workflows/classroom.yaml` from `tests/autograder.json`.
+Generates `.github/workflows/classroom.yaml` from `tests/autograder.json`, as well as any required commit counting shell scripts.
 
 Options:
 
@@ -198,7 +224,7 @@ Emits `.github/workflows/classroom.yaml` with:
 
 Name/ID rules:
 
-- **Step name** / `test-name`: uses name verbatim.
+- **Step name** / `test-name`: uses name verbatim for all `cargo test` functions.
 - **Step id**: slugified `name` (lowercase; spaces/non-alnum → `-`; collapsed).
 - **Command**: `cargo test <name> -- --exact` (uses name verbatim).
 
@@ -302,12 +328,12 @@ autograder-setup table --root ../student-assignment --to-readme
 **Markdown Output**
 Example Table for an assigment
 
-| Test name              | Description                            | Points |
-|------------------------|----------------------------------------|--------|
-| add_core               | Add function works in the core case    | 10     |
-| add_small_numbers      | Add function works with small numbers  | 5      |
-| add_with_negatives     | Add function handles negative inputs   | 3      |
-| clippy_style_check     | Clippy linting check                   | 2      |
+| Test name                | Description                            | Points |
+|--------------------------|----------------------------------------|--------|
+| `add_core`               | Add function works in the core case    | 10     |
+| `add_small_numbers`      | Add function works with small numbers  | 5      |
+| `add_with_negatives`     | Add function handles negative inputs   | 3      |
+| `clippy_style_check`     | Clippy linting check                   | 2      |
 
 ## Repository Structure
 
@@ -341,4 +367,3 @@ Example Table for an assigment
 
 - Additional CLI improvements and configuration options
 - Publish to `crates.io` for installation via `cargo install autograder-setup`
-
