@@ -156,9 +156,13 @@ Options:
 Examples:
 
 ```bash
-# Init an autograder.json in ../student-assignment/.autograder
+# Initialize an autograder.json in ../student-assignment/.autograder
 autograder-setup init --root ../student-assignment
 
+# Initialize an autograder.json by searching src/ recursively
+autograder-setup init --tests-dir src
+
+# Initialize autograder.json with 5 as the default points instead of 1
 autograder-setup init --default-points 5
 
 # Omit the style check or commit counting steps of the autograder build
@@ -175,8 +179,8 @@ autograder-setup init --num-commit-checks 3
 > - 1 point for reaching 1 commits
 > - 1 point for reaching 2 commits
 > - 1 point for reaching 3 commits
-> The number of commits required earn a point can be tweaked in `autograder.json`
 >
+> The number of commits required earn a point can be tweaked in `autograder.json`
 > This lets you award partial credit as students make more commits.
 
 ##### JSON Output
@@ -373,4 +377,3 @@ Example Table for an assigment
 
 - Additional CLI improvements and configuration options
 - Publish to `crates.io` for installation via `cargo install autograder-setup`
-
