@@ -34,6 +34,7 @@ Keeps autograding setup **simple for instructors** while making grading criteria
     - [init](#init)
     - [build](#build)
     - [table](#table)
+    - [reset](#reset)
 - [Repository Structure](#repository-structure)
 - [Upcoming Features](#upcoming-features)
 
@@ -126,6 +127,7 @@ To see flags for a specific command:
 autograder-setup init --help
 autograder-setup build --help
 autograder-setup table --help
+autograder-setup reset --help
 ```
 
 ### Command Reference
@@ -345,6 +347,26 @@ Example Table for an assigment
 | `add_with_negatives`     | Add function handles negative inputs   | 3      |
 | `clippy_style_check`     | Clippy linting check                   | 2      |
 
+#### `reset`
+
+Reset the autograder setup by deleting all created files (`.autograder` directory, and `.github/workflows/classroom.yml`)
+
+Options
+
+```bash
+  -r, --root <ROOT>
+          Root of the Rust project (defaults to current directory) [default: .]
+  -h, --help
+          Print help
+```
+
+Example
+
+```bash
+# Undo all setup done by the autograder-setup file
+autograder-setup reset
+```
+
 ## Repository Structure
 
 ```bash
@@ -362,7 +384,10 @@ Example Table for an assigment
     │   │   ├── mod.rs
     │   │   └── tests.rs
     │   ├── table           # scans tests and creates a markdown table
+    │   │   └── mod.rs
+    │   ├── reset           # Removes any files created by the CLI
     │   │   ├── mod.rs
+    │   │   └── tests.rs
     │   └── mod.rs          # Core CLI logic (arg parsing, documentation)
     ├── main.rs
     ├── types.rs            # Shared Structs (AutoTest)
