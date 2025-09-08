@@ -11,8 +11,8 @@
 
 A tiny Rust CLI that bootstraps GitHub Classroom autograding for Rust projects.
 
-- `autograder-setup init` scans for test and builds a `.autograder/autograder.json` config, making it quick and consistent to set up assignments without manually tracking test cases.  
-- `autograder-setup build` turns that config into a ready-to-run GitHub Actions workflow at `.github/workflows/classroom.yaml`, so you don’t need to hand-edit YAML for every homework.  
+- `autograder-setup init` scans for test cases and builds a `.autograder/autograder.json` config file, making it quick, easy, and consistent to set up assignments.
+- `autograder-setup build` turns that config into a ready-to-run GitHub Actions workflow at `.github/workflows/classroom.yaml`, removing the need to hand-edit YAML for every homework.  
 - `autograder-setup table` reads `.autograder/autograder.json` and generates a Markdown table for assignment READMEs, giving students a transparent overview of each test, its purpose, and its point value.  
 
 Keeps autograding setup **simple for instructors** while making grading criteria **transparent for students**.
@@ -107,11 +107,11 @@ cargo build --release
 # Show top-level help
 autograder-setup --help
 
-# 1) Scan tests/ and create tests/autograder.json
+# 1) Scan src/ recursively and create tests/autograder.json
 autograder-setup init
 
-# OR scan src/ recursively for tests if assignment isn't a package
-autograder-setup --tests-dir src
+# OR scan tests/  for tests if the assignment is a packages (uses lib.rs instead of main/mod.rs)
+autograder-setup --tests-dir tests
 
 # 2) (Optional) Edit tests/autograder.json to adjust points/timeouts
 
@@ -132,7 +132,7 @@ autograder-setup table --help
 
 #### `init`
 
-Scans `tests/` (recursively), finds test functions, and writes `.autograder/autograder.json`.
+Scans `src/` (recursively), finds test functions, and writes `.autograder/autograder.json`.
 
 Options:
 
@@ -140,7 +140,7 @@ Options:
   -r, --root <ROOT>
           Root of the Rust project (defaults to current directory) [default: .]
   -t, --tests-dir <TESTS_DIR>
-          Location of all tests (defaults to a /tests directory) [default: tests]
+          Location of all tests (defaults to the src directory) [default: src]
       --default-points <DEFAULT_POINTS>
           Default number of points per test [default: 1]
       --no-style-check
@@ -159,10 +159,10 @@ Examples:
 # Initialize an autograder.json in ../student-assignment/.autograder
 autograder-setup init --root ../student-assignment
 
-# Initialize an autograder.json by searching src/ recursively
-autograder-setup init --tests-dir src
+# Initialize an autograder.json by searching tests/ recursively
+autograder-setup init --tests-dir tests
 
-# Initialize autograder.json with 5 as the default points instead of 1
+# Initialize autograder.json with 5 as the default amount of points instead of 1
 autograder-setup init --default-points 5
 
 # Omit the style check or commit counting steps of the autograder build
@@ -180,7 +180,7 @@ autograder-setup init --num-commit-checks 3
 > - 1 point for reaching 2 commits
 > - 1 point for reaching 3 commits
 >
-> The number of commits required earn a point can be tweaked in `autograder.json`
+> The number of commits required to earn a point can be tweaked in `autograder.json`
 > This lets you award partial credit as students make more commits.
 
 ##### JSON Output
@@ -234,7 +234,7 @@ Emits `.github/workflows/classroom.yaml` with:
 
 Name/ID rules:
 
-- **Step name** / `test-name`: uses name verbatim for all `cargo test` functions.
+- **Step name** / `test-name`: uses name verbatim for all `cargo test` functions, and all caps names for other autograder steps (ex: `COMMIT_COUNTS`).
 - **Step id**: slugified `name` (lowercase; spaces/non-alnum → `-`; collapsed).
 - **Command**: `cargo test <name> -- --exact` (uses name verbatim).
 
@@ -307,7 +307,7 @@ jobs:
 #### `table`
 
 Reads `.autograder/autograder.json` and generates a Markdown table of test names, docstrings, and points.
-By default, the table is copied to the clipboard. Use  `--no-clipboard` to print to stdout instead.
+By default, the table is copied to the clipboard. Use  `--no-clipboard` to print to stdout instead, and `--to-readme` to append to the `README.md` file in the `root` directory.
 
 Options:
 

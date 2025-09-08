@@ -40,7 +40,7 @@ pub struct InitArgs {
     #[arg(short, long, default_value = ".")]
     pub root: PathBuf,
 
-    /// Location of all tests (defaults to src directory)
+    /// Location of all test cases (defaults to the src directory)
     #[arg(short, long, default_value = "src")]
     pub tests_dir: PathBuf,
 
