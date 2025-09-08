@@ -6,6 +6,7 @@ use clap::{Args, Parser, Subcommand};
 
 pub mod build;
 pub mod init;
+pub mod reset;
 pub mod table;
 
 #[derive(Parser, Debug)]
@@ -32,6 +33,9 @@ pub enum Command {
 
     /// Get a table of test names, docstrings, and points for assignment READMEs
     Table(TableArgs),
+
+    /// Delete all files created by autograder-setup
+    Reset(ResetArgs),
 }
 
 #[derive(Args, Debug)]
@@ -83,6 +87,13 @@ pub struct TableArgs {
     pub to_readme: bool,
 }
 
+#[derive(Args, Debug)]
+pub struct ResetArgs {
+    /// Root of the Rust project (defaults to current directory)
+    #[arg(short, long, default_value = ".")]
+    pub root: PathBuf,
+}
+
 pub fn run() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
@@ -97,6 +108,7 @@ pub fn run() -> Result<()> {
         // Build has no args; default to current dir root like init would.
         Command::Build(a) => build::run(&a.root),
         Command::Table(a) => table::run(&a.root, !a.no_clipboard, a.to_readme),
+        Command::Reset(a) => reset::run(&a.root),
     }
 }
 

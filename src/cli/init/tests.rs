@@ -1,4 +1,7 @@
 use super::{Test, extract_tests};
+use crate::utils::read_autograder_config;
+use std::fs;
+use tempfile::tempdir;
 
 /// Helper function for test cases
 fn extract_test_names(src: &str) -> Vec<String> {
@@ -372,4 +375,86 @@ fn doc_attribute_form_is_supported() {
     let tests = extract_tests(src).expect("Error parsing file");
     let t = by_name(&tests, "explicit_attr");
     assert_eq!(t.docstring, "first\nsecond");
+}
+
+#[test]
+fn creates_single_commit_count_step_by_default() {
+    let dir = tempdir().unwrap();
+    let src_dir = dir.path().join("src");
+    fs::create_dir(&src_dir).unwrap();
+    fs::write(src_dir.join("lib.rs"), "#[test] fn a() {}").unwrap();
+
+    // Only one commit count step by default
+    super::run(
+        dir.path(),
+        &src_dir,
+        1,
+        false, // style_check
+        true,  // commit_counts
+        1,     // num_commit_checks
+    )
+    .unwrap();
+
+    let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
+    let commit_steps: Vec<_> = items
+        .iter()
+        .filter(|t| t.name.starts_with("COMMIT_COUNT"))
+        .collect();
+    assert_eq!(commit_steps.len(), 1);
+    assert_eq!(commit_steps[0].min_commits, Some(1));
+}
+
+#[test]
+fn creates_multiple_commit_count_steps() {
+    let dir = tempdir().unwrap();
+    let src_dir = dir.path().join("src");
+    fs::create_dir(&src_dir).unwrap();
+    fs::write(src_dir.join("lib.rs"), "#[test] fn a() {}").unwrap();
+
+    // Request 3 commit count steps
+    super::run(
+        dir.path(),
+        &src_dir,
+        1,
+        false, // style_check
+        true,  // commit_counts
+        3,     // num_commit_checks
+    )
+    .unwrap();
+
+    let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
+    let commit_steps: Vec<_> = items
+        .iter()
+        .filter(|t| t.name.starts_with("COMMIT_COUNT"))
+        .collect();
+    assert_eq!(commit_steps.len(), 3);
+    for (i, step) in commit_steps.iter().enumerate() {
+        assert_eq!(step.name, format!("COMMIT_COUNT_{}", i + 1));
+        assert_eq!(step.min_commits, Some((i + 1) as u32));
+    }
+}
+
+#[test]
+fn does_not_create_commit_count_steps_if_disabled() {
+    let dir = tempdir().unwrap();
+    let src_dir = dir.path().join("src");
+    fs::create_dir(&src_dir).unwrap();
+    fs::write(src_dir.join("lib.rs"), "#[test] fn a() {}").unwrap();
+
+    super::run(
+        dir.path(),
+        &src_dir,
+        1,
+        false, // style_check
+        false, // commit_counts
+        5,     // num_commit_checks (should be ignored)
+    )
+    .unwrap();
+
+    let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
+    let commit_steps: Vec<_> = items
+        .iter()
+        .filter(|t| t.name.starts_with("COMMIT_COUNT"))
+        .collect();
+    assert_eq!(commit_steps.len(), 0);
 }
