@@ -1,10 +1,12 @@
 use anyhow::{Context, Result};
-use std::path::Path;
-
-use crate::utils::{YAML_INDENT, YAML_PREAMBLE, read_autograder_config, slug_id, yaml_quote};
-use std::fs::{File, create_dir_all};
+use std::path::{Path, PathBuf};
 
 use crate::types::{AutoTest, StepCmd};
+use crate::utils::{
+    YAML_INDENT, YAML_PREAMBLE, ensure_exists, read_autograder_config, slug_id, yaml_quote,
+};
+use std::fs::{File, create_dir_all};
+use std::io::Write;
 
 pub fn run(root: &Path) -> Result<()> {
     let tests = read_autograder_config(root)?;
@@ -16,12 +18,15 @@ pub fn run(root: &Path) -> Result<()> {
     //.yml used instead of .YAML for github classroom compatibility
     let workflow_path = workflows_dir.join("classroom.yml");
 
-    let mut yaml_compiler = YAMLAutograder::new();
+    let mut yaml_compiler = YAMLAutograder::new(root.to_path_buf());
     yaml_compiler.set_preamble(YAML_PREAMBLE.to_string());
     yaml_compiler.set_tests(tests);
     let workflow_content = yaml_compiler.compile();
 
-    write_workflow(&workflow_path, &workflow_content)?;
+    write_workflow(
+        &workflow_path,
+        &workflow_content.expect("Unable to compile YAML"),
+    )?;
     println!(
         "Wrote Configured autograder YAML to {}",
         workflow_path.to_string_lossy()
@@ -44,15 +49,17 @@ pub struct YAMLAutograder {
     tests: Vec<AutoTest>,
     ids: Vec<String>,
     added_checkout: bool,
+    root: PathBuf,
 }
 impl YAMLAutograder {
-    fn new() -> Self {
+    fn new(root: PathBuf) -> Self {
         Self {
             preamble: String::new(),
             autograder_content: String::new(),
             tests: Vec::new(),
             ids: Vec::new(),
             added_checkout: false,
+            root,
         }
     }
 
@@ -99,7 +106,7 @@ impl YAMLAutograder {
         );
     }
 
-    fn compile_test_steps(&mut self) {
+    fn compile_test_steps(&mut self) -> Result<()> {
         //Clone tests to avoid an immutable borrow on self
         let tests = self.tests.clone();
         for test in tests.iter() {
@@ -113,12 +120,15 @@ impl YAMLAutograder {
                     self.compile_test_step(test, &step.command());
                 }
 
-                StepCmd::CommitCount { .. } => {
+                StepCmd::CommitCount { min } => {
+                    write_commit_count_shell(&self.root, min)?;
                     self.compile_commit_count(test);
                 }
             }
             self.autograder_content.push('\n');
         }
+
+        Ok(())
     }
 
     fn compile_commit_count(&mut self, test: &AutoTest) {
@@ -174,12 +184,12 @@ impl YAMLAutograder {
         }
     }
 
-    fn compile(&mut self) -> String {
+    fn compile(&mut self) -> Result<String> {
         self.autograder_content.clear();
         self.autograder_content.push_str(&self.preamble);
-        self.compile_test_steps();
+        self.compile_test_steps()?;
         self.compile_test_reporter();
-        self.autograder_content.to_string()
+        Ok(self.autograder_content.to_string())
     }
 }
 
@@ -203,6 +213,50 @@ fn infer_step_cmd(test: &AutoTest) -> StepCmd {
     StepCmd::CargoTest {
         function_name: n.to_string(),
     }
+}
+
+fn write_commit_count_shell(root: &Path, num_commits: u32) -> Result<()> {
+    let tests_dir = root.join("tests");
+    ensure_exists(&tests_dir)?;
+
+    // Script path (you can pick another location if you prefer, e.g. scripts/)
+    let script_path = tests_dir.join("commit_count.sh");
+
+    // Shell script content
+    let script = format!(
+        r#"#!/usr/bin/env bash
+MIN={min}
+COUNT=$(git log --pretty=format:'' | wc -l 2>/dev/null || echo 0)
+
+if [ "$MIN" -le 0 ]; then
+  SCORE=1
+else
+  SCORE=$(awk "BEGIN {{ s=$COUNT/$MIN.0; if (s>1) s=1; if (s<0) s=0; printf \\"%.3f\\", s }}")
+fi
+
+echo "Found $COUNT commits (min $MIN) -> score $SCORE"
+echo "score:$SCORE"
+exit 0
+"#,
+        min = num_commits
+    );
+
+    // Write the file
+    let mut f = File::create(&script_path)
+        .with_context(|| format!("Failed to create {}", script_path.display()))?;
+    f.write_all(script.as_bytes())
+        .with_context(|| format!("Failed to write {}", script_path.display()))?;
+
+    // Make sure it’s executable (Unix only, Windows just ignores)
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let perms = fs::Permissions::from_mode(0o755);
+        fs::set_permissions(&script_path, perms)
+            .with_context(|| format!("Failed to chmod {}", script_path.display()))?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
