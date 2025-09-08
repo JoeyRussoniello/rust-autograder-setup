@@ -40,7 +40,7 @@ fn write_content_to_readme(root: &Path, content: &str) -> Result<()> {
         })?;
 
     // Prepend a header to separate from existing content
-    let header = "\n## Autograder Test Cases\n";
+    let header = "\n## Autograder Test Cases\n\n";
     readme
         .write_all(header.as_bytes())
         .expect("Failed to write header to README.md");
