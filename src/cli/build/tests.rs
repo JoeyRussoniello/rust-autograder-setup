@@ -32,18 +32,21 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
             timeout: 30,
             points: 2,
             docstring: "".into(),
+            min_commits: None,
         },
         AutoTest {
             name: "CLIPPY_STYLE_CHECK".into(),
             timeout: 45,
             points: 0,
             docstring: "".into(),
+            min_commits: None,
         },
         AutoTest {
             name: "tokio_async_test".into(),
             timeout: 40,
             points: 3,
             docstring: "".into(),
+            min_commits: None,
         },
     ];
     write_autograder_json(root, &tests)?;
@@ -94,6 +97,7 @@ fn compile_includes_clippy_command_when_points_positive() {
         timeout: 5,
         points: 1,
         docstring: "".into(),
+        min_commits: None,
     }]);
     let out = ya.compile();
 

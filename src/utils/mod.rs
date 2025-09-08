@@ -70,6 +70,17 @@ pub fn read_autograder_config(root: &Path) -> Result<Vec<AutoTest>> {
         anyhow::bail!("Autograder.json config not configured. Add tests using `auto-setup init`");
     }
 
+    // Validation: min_commits only allowed for COMMIT_COUNT*
+    for t in &tests {
+        let is_commit = t.name.trim().starts_with("COMMIT_COUNT");
+        if t.min_commits.is_some() && !is_commit {
+            anyhow::bail!(
+                "Field `min_commits` is only valid for COMMIT_COUNT steps (offending test: `{}`)",
+                t.name
+            );
+        }
+    }
+
     Ok(tests)
 }
 

@@ -4,7 +4,7 @@ use std::path::Path;
 use crate::utils::{YAML_INDENT, YAML_PREAMBLE, read_autograder_config, slug_id, yaml_quote};
 use std::fs::{File, create_dir_all};
 
-use crate::types::AutoTest;
+use crate::types::{AutoTest, StepCmd};
 
 pub fn run(root: &Path) -> Result<()> {
     let tests = read_autograder_config(root)?;
@@ -43,6 +43,7 @@ pub struct YAMLAutograder {
     pub autograder_content: String,
     tests: Vec<AutoTest>,
     ids: Vec<String>,
+    added_checkout: bool,
 }
 impl YAMLAutograder {
     fn new() -> Self {
@@ -51,6 +52,7 @@ impl YAMLAutograder {
             autograder_content: String::new(),
             tests: Vec::new(),
             ids: Vec::new(),
+            added_checkout: false,
         }
     }
 
@@ -100,16 +102,46 @@ impl YAMLAutograder {
     fn compile_test_steps(&mut self) {
         //Clone tests to avoid an immutable borrow on self
         let tests = self.tests.clone();
-        let clippy_string = String::from("CLIPPY_STYLE_CHECK");
         for test in tests.iter() {
-            //? Could move the clippy check into the compile_test_step function, but this is clearer
-            if test.name != clippy_string {
-                self.compile_test_step(test, "cargo test");
-            } else {
-                self.compile_test_step(test, "cargo clippy -- -D warnings");
+            let step = infer_step_cmd(test);
+
+            match step {
+                StepCmd::CargoTest { .. } => {
+                    self.compile_test_step(test, &step.command());
+                }
+                StepCmd::ClippyCheck => {
+                    self.compile_test_step(test, &step.command());
+                }
+
+                StepCmd::CommitCount { .. } => {
+                    self.compile_commit_count(test);
+                }
             }
             self.autograder_content.push('\n');
         }
+    }
+
+    fn compile_commit_count(&mut self, test: &AutoTest) {
+        if !self.added_checkout {
+            self.add_checkout_step()
+        };
+        let step = StepCmd::CommitCount {
+            min: test.min_commits.unwrap(),
+        };
+        self.compile_test_step(test, &step.command())
+    }
+
+    /// Add the repository checkout step for commit counting
+    fn add_checkout_step(&mut self) {
+        if self.added_checkout {
+            return;
+        }
+
+        let indent_level = 3;
+        self.insert_autograder_string("- name: Checkout Code".into(), indent_level);
+        self.insert_autograder_string("uses: actions/checkout@v4\nwith:".into(), indent_level + 1);
+        self.insert_autograder_string("fetch-depth: 0".into(), indent_level + 2);
+        self.added_checkout = true;
     }
 
     fn compile_test_reporter(&mut self) {
@@ -148,6 +180,28 @@ impl YAMLAutograder {
         self.compile_test_steps();
         self.compile_test_reporter();
         self.autograder_content.to_string()
+    }
+}
+
+fn infer_step_cmd(test: &AutoTest) -> StepCmd {
+    let n = test.name.trim();
+
+    // Style check
+    if n.eq_ignore_ascii_case("CLIPPY_STYLE_CHECK") {
+        return StepCmd::ClippyCheck;
+    }
+
+    // Commit count
+    if n.starts_with("COMMIT_COUNT") {
+        // Priority: explicit field > number in name > default
+        return StepCmd::CommitCount {
+            min: test.min_commits.unwrap(),
+        };
+    }
+
+    // Default: cargo test by function name
+    StepCmd::CargoTest {
+        function_name: n.to_string(),
     }
 }
 

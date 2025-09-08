@@ -13,7 +13,7 @@ use crate::utils::{collect_rs_files, ensure_exists};
 #[cfg(test)]
 mod tests;
 
-pub fn run(root: &Path, num_points: u32, style_check: bool) -> Result<()> {
+pub fn run(root: &Path, num_points: u32, style_check: bool, commit_counts: bool) -> Result<()> {
     let tests_dir = root.join("tests");
     ensure_exists(&tests_dir)?;
 
@@ -50,6 +50,7 @@ pub fn run(root: &Path, num_points: u32, style_check: bool) -> Result<()> {
             timeout: 10,
             points: num_points,
             docstring: test.docstring,
+            min_commits: None,
         })
         .collect();
     if style_check {
@@ -58,6 +59,17 @@ pub fn run(root: &Path, num_points: u32, style_check: bool) -> Result<()> {
             timeout: 10,
             points: num_points,
             docstring: "cargo clippy style check".to_string(),
+            min_commits: None,
+        });
+    }
+
+    if commit_counts {
+        items.push(AutoTest {
+            name: "COMMIT_COUNT".to_string(),
+            timeout: 10,
+            points: num_points,
+            docstring: format!("Ensures at least {} commits.", commit_counts),
+            min_commits: Some(1),
         });
     }
 
