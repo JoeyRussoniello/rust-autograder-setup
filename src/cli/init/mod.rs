@@ -13,7 +13,13 @@ use crate::utils::{collect_rs_files, ensure_exists};
 #[cfg(test)]
 mod tests;
 
-pub fn run(root: &Path, num_points: u32, style_check: bool, commit_counts: bool) -> Result<()> {
+pub fn run(
+    root: &Path,
+    num_points: u32,
+    style_check: bool,
+    commit_counts: bool,
+    num_commit_checks: u32,
+) -> Result<()> {
     let tests_dir = root.join("tests");
     ensure_exists(&tests_dir)?;
 
@@ -64,13 +70,16 @@ pub fn run(root: &Path, num_points: u32, style_check: bool, commit_counts: bool)
     }
 
     if commit_counts {
-        items.push(AutoTest {
-            name: "COMMIT_COUNT".to_string(),
-            timeout: 10,
-            points: num_points,
-            docstring: "Ensures at least ## commits.".to_string(),
-            min_commits: Some(1),
-        });
+        for i in 1..=num_commit_checks {
+            items.push(AutoTest {
+                name: format!("COMMIT_COUNT_{}", i),
+                timeout: 10,
+                points: num_points,
+                // ## Left because table command will replace dynamically
+                docstring: "Ensures at least ## commits.".to_string(),
+                min_commits: Some(i),
+            });
+        }
     }
 
     let json = serde_json::to_string_pretty(&items)?;
