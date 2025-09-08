@@ -1,10 +1,10 @@
 use anyhow::{Context, Result};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
+use crate::types::{AutoTest, StepCmd};
 use crate::utils::{YAML_INDENT, YAML_PREAMBLE, read_autograder_config, slug_id, yaml_quote};
 use std::fs::{File, create_dir_all};
-
-use crate::types::AutoTest;
+use std::io::Write;
 
 pub fn run(root: &Path) -> Result<()> {
     let tests = read_autograder_config(root)?;
@@ -16,12 +16,15 @@ pub fn run(root: &Path) -> Result<()> {
     //.yml used instead of .YAML for github classroom compatibility
     let workflow_path = workflows_dir.join("classroom.yml");
 
-    let mut yaml_compiler = YAMLAutograder::new();
+    let mut yaml_compiler = YAMLAutograder::new(root.to_path_buf());
     yaml_compiler.set_preamble(YAML_PREAMBLE.to_string());
     yaml_compiler.set_tests(tests);
     let workflow_content = yaml_compiler.compile();
 
-    write_workflow(&workflow_path, &workflow_content)?;
+    write_workflow(
+        &workflow_path,
+        &workflow_content.expect("Unable to compile YAML"),
+    )?;
     println!(
         "Wrote Configured autograder YAML to {}",
         workflow_path.to_string_lossy()
@@ -43,14 +46,18 @@ pub struct YAMLAutograder {
     pub autograder_content: String,
     tests: Vec<AutoTest>,
     ids: Vec<String>,
+    added_checkout: bool,
+    root: PathBuf,
 }
 impl YAMLAutograder {
-    fn new() -> Self {
+    fn new(root: PathBuf) -> Self {
         Self {
             preamble: String::new(),
             autograder_content: String::new(),
             tests: Vec::new(),
             ids: Vec::new(),
+            added_checkout: false,
+            root,
         }
     }
 
@@ -97,19 +104,51 @@ impl YAMLAutograder {
         );
     }
 
-    fn compile_test_steps(&mut self) {
+    fn compile_test_steps(&mut self) -> Result<()> {
         //Clone tests to avoid an immutable borrow on self
         let tests = self.tests.clone();
-        let clippy_string = String::from("CLIPPY_STYLE_CHECK");
         for test in tests.iter() {
-            //? Could move the clippy check into the compile_test_step function, but this is clearer
-            if test.name != clippy_string {
-                self.compile_test_step(test, "cargo test");
-            } else {
-                self.compile_test_step(test, "cargo clippy -- -D warnings");
+            let step = infer_step_cmd(test);
+
+            match step {
+                StepCmd::CargoTest { .. } => {
+                    self.compile_test_step(test, &step.command());
+                }
+                StepCmd::ClippyCheck => {
+                    self.compile_test_step(test, &step.command());
+                }
+
+                StepCmd::CommitCount { min } => {
+                    write_commit_count_shell(&self.root, min)?;
+                    self.compile_commit_count(test);
+                }
             }
             self.autograder_content.push('\n');
         }
+
+        Ok(())
+    }
+
+    fn compile_commit_count(&mut self, test: &AutoTest) {
+        if !self.added_checkout {
+            self.add_checkout_step()
+        };
+
+        // Root agnostic, since we want relative pathing
+        self.compile_test_step(test, &get_commit_script_path())
+    }
+
+    /// Add the repository checkout step for commit counting
+    fn add_checkout_step(&mut self) {
+        if self.added_checkout {
+            return;
+        }
+
+        let indent_level = 3;
+        self.insert_autograder_string("- name: Checkout Code".into(), indent_level);
+        self.insert_autograder_string("uses: actions/checkout@v4\nwith:".into(), indent_level + 1);
+        self.insert_autograder_string("fetch-depth: 0".into(), indent_level + 2);
+        self.added_checkout = true;
     }
 
     fn compile_test_reporter(&mut self) {
@@ -142,13 +181,72 @@ impl YAMLAutograder {
         }
     }
 
-    fn compile(&mut self) -> String {
+    fn compile(&mut self) -> Result<String> {
         self.autograder_content.clear();
         self.autograder_content.push_str(&self.preamble);
-        self.compile_test_steps();
+        self.compile_test_steps()?;
         self.compile_test_reporter();
-        self.autograder_content.to_string()
+        Ok(self.autograder_content.to_string())
     }
+}
+
+fn infer_step_cmd(test: &AutoTest) -> StepCmd {
+    let n = test.name.trim();
+
+    // Style check
+    if n.eq_ignore_ascii_case("CLIPPY_STYLE_CHECK") {
+        return StepCmd::ClippyCheck;
+    }
+
+    // Commit count
+    if n.starts_with("COMMIT_COUNT") {
+        // Priority: explicit field > number in name > default
+        return StepCmd::CommitCount {
+            min: test.min_commits.unwrap(),
+        };
+    }
+
+    // Default: cargo test by function name
+    StepCmd::CargoTest {
+        function_name: n.to_string(),
+    }
+}
+
+fn get_commit_script_path() -> String {
+    "./tests/commit_count.sh".into()
+}
+fn write_commit_count_shell(root: &Path, num_commits: u32) -> Result<()> {
+    let script_path = root.join("tests").join("commit_count.sh");
+    // Shell script content
+    let script = format!(
+        r#"#!/usr/bin/env bash
+MIN={min}
+COUNT=$(git log --pretty=format:'' | wc -l 2>/dev/null || echo 0)
+
+if [ "$MIN" -le 0 ]; then
+  SCORE=1
+else
+  SCORE=$(awk "BEGIN {{ s=$COUNT/$MIN.0; if (s>1) s=1; if (s<0) s=0; printf \\"%.3f\\", s }}")
+fi
+
+echo "Found $COUNT commits (min $MIN) -> score $SCORE"
+echo "score:$SCORE"
+exit 0
+"#,
+        min = num_commits
+    );
+
+    // Write the file
+    let mut f = File::create(&script_path)
+        .with_context(|| format!("Failed to create {}", script_path.display()))?;
+    f.write_all(script.as_bytes())
+        .with_context(|| format!("Failed to write {}", script_path.display()))?;
+
+    println!(
+        "Wrote commit count shell to {}",
+        script_path.to_string_lossy()
+    );
+    Ok(())
 }
 
 #[cfg(test)]

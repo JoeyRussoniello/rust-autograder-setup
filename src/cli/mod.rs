@@ -47,6 +47,10 @@ pub struct InitArgs {
     /// Disable the Clippy style check (enabled by default)
     #[arg(long = "no-style-check")]
     pub no_style_check: bool,
+
+    /// Disable Commit Counting (enabled by default)
+    #[arg(long = "no-commit-count")]
+    pub no_commit_count: bool,
 }
 
 #[derive(Args, Debug)]
@@ -74,7 +78,12 @@ pub struct TableArgs {
 pub fn run() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
-        Command::Init(a) => init::run(&a.root, a.default_points, !a.no_style_check),
+        Command::Init(a) => init::run(
+            &a.root,
+            a.default_points,
+            !a.no_style_check,
+            !a.no_commit_count,
+        ),
         // Build has no args; default to current dir root like init would.
         Command::Build(a) => build::run(&a.root),
         Command::Table(a) => table::run(&a.root, !a.no_clipboard, a.to_readme),

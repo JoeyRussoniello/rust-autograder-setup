@@ -32,18 +32,21 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
             timeout: 30,
             points: 2,
             docstring: "".into(),
+            min_commits: None,
         },
         AutoTest {
             name: "CLIPPY_STYLE_CHECK".into(),
             timeout: 45,
             points: 0,
             docstring: "".into(),
+            min_commits: None,
         },
         AutoTest {
             name: "tokio_async_test".into(),
             timeout: 40,
             points: 3,
             docstring: "".into(),
+            min_commits: None,
         },
     ];
     write_autograder_json(root, &tests)?;
@@ -87,15 +90,16 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
 fn compile_includes_clippy_command_when_points_positive() {
     // Directly exercise YAMLAutograder internals:
     // if CLIPPY has >0 points, it should be included with cargo clippy command.
-    let mut ya = YAMLAutograder::new();
+    let mut ya = YAMLAutograder::new(PathBuf::from("."));
     ya.set_preamble(String::new());
     ya.set_tests(vec![AutoTest {
         name: "CLIPPY_STYLE_CHECK".into(),
         timeout: 5,
         points: 1,
         docstring: "".into(),
+        min_commits: None,
     }]);
-    let out = ya.compile();
+    let out = ya.compile().expect("Unable to compile YAML");
 
     assert!(out.contains(r#"- name: CLIPPY_STYLE_CHECK"#));
     assert!(out.contains(r#"command: "cargo clippy -- -D warnings""#));
@@ -155,7 +159,7 @@ fn write_workflow_creates_file_and_is_recoverable() -> anyhow::Result<()> {
 
 #[test]
 fn insert_autograder_string_respects_indentation_and_line_splitting() {
-    let mut ya = YAMLAutograder::new();
+    let mut ya = YAMLAutograder::new(PathBuf::from("."));
     ya.set_preamble(String::new());
     ya.insert_autograder_string("foo".into(), 0);
     ya.insert_autograder_string("bar\nbaz".into(), 2);
