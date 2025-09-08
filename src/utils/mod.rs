@@ -114,5 +114,9 @@ pub fn yaml_quote(s: &str) -> String {
     format!("\"{}\"", s.replace('"', "\\\""))
 }
 
+pub fn replace_commit_count_docstring(s: String, num_commits: u32) -> String {
+    s.replace("##", &num_commits.to_string())
+}
+
 #[cfg(test)]
 pub mod tests;

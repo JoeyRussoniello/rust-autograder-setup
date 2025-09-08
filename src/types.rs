@@ -1,3 +1,4 @@
+use crate::utils::replace_commit_count_docstring;
 use markdown_tables::MarkdownTableRow;
 use serde::{Deserialize, Serialize};
 
@@ -18,11 +19,13 @@ impl MarkdownTableRow for AutoTest {
     }
 
     fn column_values(&self) -> Vec<String> {
-        vec![
-            format!("`{}`", self.name),
-            self.points.to_string(),
-            self.docstring.clone(),
-        ]
+        let doc = if let Some(min_commits) = self.min_commits {
+            replace_commit_count_docstring(self.docstring.clone(), min_commits)
+        } else {
+            self.docstring.clone()
+        };
+
+        vec![format!("`{}`", self.name), self.points.to_string(), doc]
     }
 }
 
