@@ -15,12 +15,13 @@ mod tests;
 
 pub fn run(
     root: &Path,
+    tests_dir_name: &Path,
     num_points: u32,
     style_check: bool,
     commit_counts: bool,
     num_commit_checks: u32,
 ) -> Result<()> {
-    let tests_dir = root.join("tests");
+    let tests_dir = root.join(tests_dir_name);
     ensure_exists(&tests_dir)?;
 
     let files = collect_rs_files(&tests_dir)
@@ -44,7 +45,7 @@ pub fn run(
         anyhow::bail!("Found no test functions (looked for #[test]/#[...::test])");
     }
 
-    let out_dir = root.join("tests");
+    let out_dir = root.join(".autograder");
     fs::create_dir_all(&out_dir)
         .with_context(|| format!("Failed to create {}", out_dir.to_string_lossy()))?;
     let out_path = out_dir.join("autograder.json");

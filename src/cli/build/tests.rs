@@ -6,7 +6,7 @@ use tempfile::tempdir;
 
 // Small helper: write a JSON array of AutoTest to tests/autograder.json
 fn write_autograder_json(root: &Path, tests: &[AutoTest]) -> anyhow::Result<()> {
-    let tests_dir = root.join("tests");
+    let tests_dir = root.join(".autograder");
     fs::create_dir_all(&tests_dir)?;
     let path = tests_dir.join("autograder.json");
     let mut f = File::create(path)?;
@@ -117,7 +117,7 @@ fn compile_includes_clippy_command_when_points_positive() {
 fn read_autograder_config_parses_valid_json_and_errors_on_invalid() -> anyhow::Result<()> {
     let tmp = tempdir()?;
     let root = tmp.path();
-    let tests_dir = root.join("tests");
+    let tests_dir = root.join(".autograder");
     fs::create_dir_all(&tests_dir)?;
 
     // Valid JSON

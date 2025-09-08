@@ -11,9 +11,9 @@
 
 A tiny Rust CLI that bootstraps GitHub Classroom autograding for Rust projects.
 
-- `autograder-setup init` scans your `tests/` folder and builds a `tests/autograder.json` config, making it quick and consistent to set up assignments without manually tracking test cases.  
+- `autograder-setup init` scans for test and builds a `.autograder/autograder.json` config, making it quick and consistent to set up assignments without manually tracking test cases.  
 - `autograder-setup build` turns that config into a ready-to-run GitHub Actions workflow at `.github/workflows/classroom.yaml`, so you don’t need to hand-edit YAML for every homework.  
-- `autograder-setup table` reads `tests/autograder.json` and generates a Markdown table for assignment READMEs, giving students a transparent overview of each test, its purpose, and its point value.  
+- `autograder-setup table` reads `.autograder/autograder.json` and generates a Markdown table for assignment READMEs, giving students a transparent overview of each test, its purpose, and its point value.  
 
 Keeps autograding setup **simple for instructors** while making grading criteria **transparent for students**.
 
@@ -110,6 +110,9 @@ autograder-setup --help
 # 1) Scan tests/ and create tests/autograder.json
 autograder-setup init
 
+# OR scan src/ recursively for tests if assignment isn't a package
+autograder-setup --tests-dir src
+
 # 2) (Optional) Edit tests/autograder.json to adjust points/timeouts
 
 # 3) Generate the GitHub Actions workflow
@@ -129,29 +132,31 @@ autograder-setup table --help
 
 #### `init`
 
-Scans `tests/` (recursively), finds test functions, and writes `tests/autograder.json`.
+Scans `tests/` (recursively), finds test functions, and writes `.autograder/autograder.json`.
 
 Options:
 
 ```bash
--r, --root <ROOT>
-        Root of the Rust project (defaults to current directory) [default: .]
-    --default-points <DEFAULT_POINTS>
-        Default number of points per test [default: 1]
-    --no-style-check
-        Disable the Clippy style check (enabled by default)
-    --no-commit-count
-        Disable Commit Counting (enabled by default)
-    --num-commit-checks <NUM_COMMIT_CHECKS>
-        Number of commit count checks (default: 1) [default: 1]
--h, --help
-        Print help
+  -r, --root <ROOT>
+          Root of the Rust project (defaults to current directory) [default: .]
+  -t, --tests-dir <TESTS_DIR>
+          Location of all tests (defaults to a /tests directory) [default: tests]
+      --default-points <DEFAULT_POINTS>
+          Default number of points per test [default: 1]
+      --no-style-check
+          Disable the Clippy style check (enabled by default)
+      --no-commit-count
+          Disable Commit Counting (enabled by default)
+      --num-commit-checks <NUM_COMMIT_CHECKS>
+          Number of commit count checks (default: 1) [default: 1]
+  -h, --help
+          Print help
 ```
 
 Examples:
 
 ```bash
-# Init an autograder.json in ../student-assignment/tests
+# Init an autograder.json in ../student-assignment/.autograder
 autograder-setup init --root ../student-assignment
 
 autograder-setup init --default-points 5
@@ -171,7 +176,7 @@ autograder-setup init --num-commit-checks 3
 > - 1 point for reaching 2 commits
 > - 1 point for reaching 3 commits
 > The number of commits required earn a point can be tweaked in `autograder.json`
-> 
+>
 > This lets you award partial credit as students make more commits.
 
 ##### JSON Output
@@ -200,7 +205,7 @@ Example:
 
 #### `build`
 
-Generates `.github/workflows/classroom.yaml` from `tests/autograder.json`, as well as any required commit counting shell scripts.
+Generates `.github/workflows/classroom.yaml` from `.autograder/autograder.json`, as well as any required commit counting shell scripts.
 
 Options:
 
@@ -297,7 +302,7 @@ jobs:
 
 #### `table`
 
-Reads `tests/autograder.json` and generates a Markdown table of test names, docstrings, and points.
+Reads `.autograder/autograder.json` and generates a Markdown table of test names, docstrings, and points.
 By default, the table is copied to the clipboard. Use  `--no-clipboard` to print to stdout instead.
 
 Options:

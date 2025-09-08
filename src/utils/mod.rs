@@ -51,16 +51,13 @@ fn recurse(dir: &Path, out: &mut Vec<PathBuf>) -> Result<()> {
 
 pub fn ensure_exists(tests_dir: &Path) -> Result<()> {
     if !tests_dir.exists() {
-        anyhow::bail!(
-            "No `tests/` directory found at {}",
-            tests_dir.to_string_lossy()
-        );
+        anyhow::bail!("Nothing found at {}", tests_dir.to_string_lossy());
     }
     Ok(())
 }
 
 pub fn read_autograder_config(root: &Path) -> Result<Vec<AutoTest>> {
-    let path = root.join("tests").join("autograder.json");
+    let path = root.join(".autograder").join("autograder.json");
     ensure_exists(&path)?;
     let file = fs::File::open(path)?;
     let reader = BufReader::new(file);

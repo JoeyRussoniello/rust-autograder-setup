@@ -134,10 +134,9 @@ impl YAMLAutograder {
         };
 
         // Root agnostic, since we want relative pathing
-        // TODO: Add a --test-dir flag
         self.compile_test_step(
             test,
-            &format!("bash ./tests/{}", get_commit_count_file_name(test)),
+            &format!("bash ./.autograder/{}", get_commit_count_file_name(test)),
         );
     }
 
@@ -219,7 +218,7 @@ fn get_commit_count_file_name(test: &AutoTest) -> String {
     format!("{}.sh", test.name.to_lowercase())
 }
 fn write_commit_count_shell(root: &Path, num_commits: u32, name: &str) -> Result<()> {
-    let script_path = root.join("tests").join(name);
+    let script_path = root.join(".autograder").join(name);
     // Shell script content
     let script = format!(
         r#"#!/usr/bin/env bash

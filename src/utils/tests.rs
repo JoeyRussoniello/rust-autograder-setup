@@ -77,8 +77,11 @@ fn ensure_exists_err_when_missing() {
     let missing = tmp.path().join("tests"); // doesn’t exist
     let err = ensure_exists(&missing).unwrap_err();
     let msg = format!("{err}");
-    assert!(msg.contains("No `tests/` directory found"), "got: {msg}");
-    assert!(msg.contains("tests"), "message should surface the path");
+    assert!(msg.contains("Nothing found at"), "got: {msg}");
+    assert!(
+        msg.contains("\\") | msg.contains("/"),
+        "message should surface the path"
+    );
 }
 
 // -------- slug_id --------
