@@ -40,6 +40,10 @@ pub struct InitArgs {
     #[arg(short, long, default_value = ".")]
     pub root: PathBuf,
 
+    /// Location of all tests (defaults to a /tests directory)
+    #[arg(short, long, default_value = "tests")]
+    pub tests_dir: PathBuf,
+
     /// Default number of points per test
     #[arg(long = "default-points", default_value_t = 1)]
     pub default_points: u32,
@@ -84,6 +88,7 @@ pub fn run() -> Result<()> {
     match cli.command {
         Command::Init(a) => init::run(
             &a.root,
+            &a.tests_dir,
             a.default_points,
             !a.no_style_check,
             !a.no_commit_count,

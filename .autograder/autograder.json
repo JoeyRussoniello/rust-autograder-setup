@@ -1,0 +1,303 @@
+[
+  {
+    "name": "run_generates_yaml_pruning_zero_point_and_using_exact_commands",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "compile_includes_clippy_command_when_points_positive",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "read_autograder_config_parses_valid_json_and_errors_on_invalid",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "write_workflow_creates_file_and_is_recoverable",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "insert_autograder_string_respects_indentation_and_line_splitting",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "finds_plain_test",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "finds_namespaced_test_and_async_pub",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "respects_modifiers_between_attr_and_fn",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "finds_cfg_attr_test_simple",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "cfg_attr_with_multiple_applied_attrs",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "cfg_attr_non_applied_predicate_does_not_mark_test",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "recurses_inline_modules_but_not_out_of_line",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "ignores_commented_out_attrs_and_functions",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "multiple_attrs_on_same_fn",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "tricky_spacing_and_newlines",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "cfg_attr_with_nested_list_tokens",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "does_not_false_positive_on_non_test_attrs",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "supports_underscore_and_digits_in_idents",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "many_in_one_file",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "single_line_doc_on_plain_test",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "multi_line_doc_triple_slash",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "block_doc_comment_preserved",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "doc_with_namespaced_test_and_async",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "ignores_non_doc_attributes",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "empty_doc_when_absent",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "preserves_order_and_newlines_exactly",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "inline_mods_collect_their_docs",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "doc_attribute_form_is_supported",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "verify_cli_schema",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "parse_defaults_init",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "parse_all_flags_init",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "parse_build_no_args",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "parse_requires_subcommand",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "collect_rs_files_finds_rs_recursively_and_ignores_others",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "collect_rs_files_empty_dir_is_ok",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "ensure_exists_ok_when_dir_exists",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "ensure_exists_err_when_missing",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "slug_id_basic_lowercases_and_replaces_non_alnum_with_single_dashes",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "slug_id_handles_unicode_by_treating_non_ascii_as_separators",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "slug_id_only_dashes_or_symbols_yields_empty_or_clean_slug",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "yaml_quote_wraps_in_double_quotes_and_escapes_internal_quotes",
+    "docstring": "",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "CLIPPY_STYLE_CHECK",
+    "docstring": "cargo clippy style check",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": null
+  },
+  {
+    "name": "COMMIT_COUNT_1",
+    "docstring": "Ensures at least ## commits.",
+    "timeout": 10,
+    "points": 1,
+    "min_commits": 1
+  }
+]
