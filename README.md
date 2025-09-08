@@ -171,6 +171,7 @@ autograder-setup init --num-commit-checks 3
 > - 1 point for reaching 2 commits
 > - 1 point for reaching 3 commits
 > The number of commits required earn a point can be tweaked in `autograder.json`
+> 
 > This lets you award partial credit as students make more commits.
 
 ##### JSON Output
@@ -367,3 +368,4 @@ Example Table for an assigment
 
 - Additional CLI improvements and configuration options
 - Publish to `crates.io` for installation via `cargo install autograder-setup`
+
