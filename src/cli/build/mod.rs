@@ -2,9 +2,7 @@ use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
 use crate::types::{AutoTest, StepCmd};
-use crate::utils::{
-    YAML_INDENT, YAML_PREAMBLE, ensure_exists, read_autograder_config, slug_id, yaml_quote,
-};
+use crate::utils::{YAML_INDENT, YAML_PREAMBLE, read_autograder_config, slug_id, yaml_quote};
 use std::fs::{File, create_dir_all};
 use std::io::Write;
 
@@ -135,10 +133,9 @@ impl YAMLAutograder {
         if !self.added_checkout {
             self.add_checkout_step()
         };
-        let step = StepCmd::CommitCount {
-            min: test.min_commits.unwrap(),
-        };
-        self.compile_test_step(test, &step.command())
+
+        // Root agnostic, since we want relative pathing
+        self.compile_test_step(test, &get_commit_script_path())
     }
 
     /// Add the repository checkout step for commit counting
@@ -215,13 +212,11 @@ fn infer_step_cmd(test: &AutoTest) -> StepCmd {
     }
 }
 
+fn get_commit_script_path() -> String {
+    "./tests/commit_count.sh".into()
+}
 fn write_commit_count_shell(root: &Path, num_commits: u32) -> Result<()> {
-    let tests_dir = root.join("tests");
-    ensure_exists(&tests_dir)?;
-
-    // Script path (you can pick another location if you prefer, e.g. scripts/)
-    let script_path = tests_dir.join("commit_count.sh");
-
+    let script_path = root.join("tests").join("commit_count.sh");
     // Shell script content
     let script = format!(
         r#"#!/usr/bin/env bash
@@ -256,6 +251,10 @@ exit 0
             .with_context(|| format!("Failed to chmod {}", script_path.display()))?;
     }
 
+    println!(
+        "Wrote commit count shell to {}",
+        script_path.to_string_lossy()
+    );
     Ok(())
 }
 

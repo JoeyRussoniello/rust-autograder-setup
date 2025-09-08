@@ -41,18 +41,10 @@ impl StepCmd {
                 format!("cargo test {} -- --exact", function_name.trim())
             }
             StepCmd::ClippyCheck => "cargo clippy -- -D warnings".to_string(),
-            StepCmd::CommitCount { min } => format!(
-                r#"MIN={min}
-COUNT=$(git log --pretty=format:'' | wc -l 2>/dev/null || echo 0)
-if [ "$MIN" -le 0 ]; then
-  SCORE=1
-else
-  SCORE=$(awk "BEGIN {{ s=$COUNT/{min}.0; if (s>1) s=1; if (s<0) s=0; printf \"%.3f\", s }}")
-fi
-echo "Found $COUNT commits (min $MIN) -> score $SCORE"
-echo "score:$SCORE"
-exit 0"#
-            ),
+            StepCmd::CommitCount { .. } => {
+                // ! Builder will ovewrite with the path to the shell script on disk.
+                String::new()
+            }
         }
     }
 }
