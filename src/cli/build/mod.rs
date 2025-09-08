@@ -4,7 +4,6 @@ use std::path::{Path, PathBuf};
 use crate::types::{AutoTest, StepCmd};
 use crate::utils::{YAML_INDENT, YAML_PREAMBLE, read_autograder_config, slug_id, yaml_quote};
 use std::fs::{File, create_dir_all};
-use std::io::Write;
 
 pub fn run(root: &Path) -> Result<()> {
     let tests = read_autograder_config(root)?;
@@ -237,10 +236,7 @@ exit 0
     );
 
     // Write the file
-    let mut f = File::create(&script_path)
-        .with_context(|| format!("Failed to create {}", script_path.display()))?;
-    f.write_all(script.as_bytes())
-        .with_context(|| format!("Failed to write {}", script_path.display()))?;
+    write_workflow(&script_path, &script)?;
 
     println!(
         "Wrote commit count shell to {}",
