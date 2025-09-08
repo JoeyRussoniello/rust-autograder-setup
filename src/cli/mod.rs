@@ -51,6 +51,10 @@ pub struct InitArgs {
     /// Disable Commit Counting (enabled by default)
     #[arg(long = "no-commit-count")]
     pub no_commit_count: bool,
+
+    /// Number of commit count checks (default: 1).
+    #[arg(long = "num-commit-checks", default_value_t = 1)]
+    pub num_commit_checks: u32,
 }
 
 #[derive(Args, Debug)]
@@ -83,6 +87,7 @@ pub fn run() -> Result<()> {
             a.default_points,
             !a.no_style_check,
             !a.no_commit_count,
+            a.num_commit_checks,
         ),
         // Build has no args; default to current dir root like init would.
         Command::Build(a) => build::run(&a.root),
