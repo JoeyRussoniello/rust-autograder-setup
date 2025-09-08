@@ -68,7 +68,7 @@ pub fn run(root: &Path, num_points: u32, style_check: bool, commit_counts: bool)
             name: "COMMIT_COUNT".to_string(),
             timeout: 10,
             points: num_points,
-            docstring: format!("Ensures at least {} commits.", commit_counts),
+            docstring: "Ensures at least ## commits.".to_string(),
             min_commits: Some(1),
         });
     }
