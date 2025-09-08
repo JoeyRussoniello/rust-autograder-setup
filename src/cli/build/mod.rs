@@ -134,7 +134,8 @@ impl YAMLAutograder {
         };
 
         // Root agnostic, since we want relative pathing
-        self.compile_test_step(test, &get_commit_script_path())
+        // TODO: Add a --test-dir flag
+        self.compile_test_step(test, "bash ./tests/commit_count.sh");
     }
 
     /// Add the repository checkout step for commit counting
@@ -211,26 +212,47 @@ fn infer_step_cmd(test: &AutoTest) -> StepCmd {
     }
 }
 
-fn get_commit_script_path() -> String {
-    "./tests/commit_count.sh".into()
-}
 fn write_commit_count_shell(root: &Path, num_commits: u32) -> Result<()> {
     let script_path = root.join("tests").join("commit_count.sh");
     // Shell script content
     let script = format!(
         r#"#!/usr/bin/env bash
-MIN={min}
-COUNT=$(git log --pretty=format:'' | wc -l 2>/dev/null || echo 0)
+# tests/commit_count.sh
+set -euo pipefail
 
-if [ "$MIN" -le 0 ]; then
-  SCORE=1
-else
-  SCORE=$(awk "BEGIN {{ s=$COUNT/$MIN.0; if (s>1) s=1; if (s<0) s=0; printf \\"%.3f\\", s }}")
+# Usage:
+#   MIN=3 bash tests/commit_count.sh
+#   bash tests/commit_count.sh -m 3
+
+MIN={min}
+
+# Validate MIN
+if ! [[ "$MIN" =~ ^[0-9]+$ ]]; then
+  echo "MIN must be a non-negative integer; got: '$MIN'" >&2
+  exit 2
 fi
 
-echo "Found $COUNT commits (min $MIN) -> score $SCORE"
-echo "score:$SCORE"
-exit 0
+# Ensure we're in a git repo
+if ! git rev-parse --git-dir >/dev/null 2>&1; then
+  echo "Not a git repository (are you running inside the checkout?)" >&2
+  exit 1
+fi
+
+# Warn if shallow (runner must checkout with fetch-depth: 0 for full history)
+if [ -f "$(git rev-parse --git-dir)/shallow" ]; then
+  echo "Warning: shallow clone detected; commit count may be incomplete." >&2
+fi
+
+# Count commits
+COUNT=$(git rev-list --count HEAD 2>/dev/null || echo 0)
+
+if [ "$COUNT" -ge "$MIN" ]; then
+  echo "✅ Found $COUNT commits (min $MIN) — PASS"
+  exit 0
+else
+  echo "❌ Found $COUNT commits (min $MIN) — FAIL"
+  exit 1
+fi
 "#,
         min = num_commits
     );
