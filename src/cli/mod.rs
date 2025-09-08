@@ -6,8 +6,8 @@ use clap::{Args, Parser, Subcommand};
 
 pub mod build;
 pub mod init;
+pub mod reset;
 pub mod table;
-pub mod reset; 
 
 #[derive(Parser, Debug)]
 #[command(
@@ -35,7 +35,7 @@ pub enum Command {
     Table(TableArgs),
 
     /// Delete all files created by autograder-setup
-    Reset(ResetArgs)
+    Reset(ResetArgs),
 }
 
 #[derive(Args, Debug)]

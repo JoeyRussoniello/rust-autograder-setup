@@ -1,6 +1,6 @@
 use super::*;
-use tempfile::tempdir;
 use std::fs::{self, File};
+use tempfile::tempdir;
 
 #[test]
 fn removes_autograder_dir() {

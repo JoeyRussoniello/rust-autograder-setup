@@ -1,8 +1,8 @@
 use anyhow::Result;
-use std::path::Path;
 use std::fs;
+use std::path::Path;
 
-pub fn run(root: &Path) -> Result<()> { 
+pub fn run(root: &Path) -> Result<()> {
     // Remove the generated .autograder directory
     let autograder_dir = root.join(".autograder");
     if autograder_dir.exists() {
