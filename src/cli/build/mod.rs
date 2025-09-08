@@ -242,15 +242,6 @@ exit 0
     f.write_all(script.as_bytes())
         .with_context(|| format!("Failed to write {}", script_path.display()))?;
 
-    // Make sure it’s executable (Unix only, Windows just ignores)
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::PermissionsExt;
-        let perms = fs::Permissions::from_mode(0o755);
-        fs::set_permissions(&script_path, perms)
-            .with_context(|| format!("Failed to chmod {}", script_path.display()))?;
-    }
-
     println!(
         "Wrote commit count shell to {}",
         script_path.to_string_lossy()
