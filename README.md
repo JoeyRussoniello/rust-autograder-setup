@@ -11,7 +11,7 @@
 
 A tiny Rust CLI that bootstraps GitHub Classroom autograding for Rust projects.
 
-- `autograder-setup init` scans for test cases and builds a `.autograder/autograder.json` config file, making it quick, easy, and consistent to set up assignments.
+- `autograder-setup init` scans for test cases across multiple rust projects and builds a `.autograder/autograder.json` config file, making it quick, easy, and consistent to set up assignments.
 - `autograder-setup build` turns that config into a ready-to-run GitHub Actions workflow at `.github/workflows/classroom.yaml`, removing the need to hand-edit YAML for every homework.  
 - `autograder-setup table` reads `.autograder/autograder.json` and generates a Markdown table for assignment READMEs, giving students a transparent overview of each test, its purpose, and its point value.  
 
