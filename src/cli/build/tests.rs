@@ -176,3 +176,59 @@ fn insert_autograder_string_respects_indentation_and_line_splitting() {
     assert!(out.contains(&expected_bar));
     assert!(out.ends_with(&expected_baz));
 }
+
+#[test]
+fn run_includes_manifest_path_when_present() -> anyhow::Result<()> {
+    let tmp = tempdir()?;
+    let root = tmp.path();
+
+    let tests = vec![
+        AutoTest {
+            name: "unit_adds".into(),
+            timeout: 10,
+            points: 2,
+            docstring: "".into(),
+            min_commits: None,
+            manifest_path: Some("questions/q1/Cargo.toml".into()),
+        },
+        AutoTest {
+            name: "root_case".into(),
+            timeout: 10,
+            points: 1,
+            docstring: "".into(),
+            min_commits: None,
+            manifest_path: None,
+        },
+    ];
+    write_autograder_json(root, &tests)?;
+
+    // Act
+    run(root)?;
+
+    // Assert
+    let yaml = read_workflow(root)?;
+    // Has preamble
+    assert!(yaml.starts_with(YAML_PREAMBLE));
+
+    // Test with manifest_path gets the flag inserted before `-- --exact`
+    assert!(yaml.contains(r#"- name: unit_adds"#));
+    assert!(yaml.contains(r#"test-name: "unit_adds""#));
+    assert!(yaml.contains(
+        r#"command: "cargo test unit_adds --manifest-path questions/q1/Cargo.toml -- --exact""#
+    ));
+    assert!(yaml.contains(r#"max-score: 2"#));
+
+    // Test without manifest_path should NOT include the flag
+    assert!(yaml.contains(r#"- name: root_case"#));
+    assert!(yaml.contains(r#"test-name: "root_case""#));
+    assert!(yaml.contains(r#"command: "cargo test root_case -- --exact""#));
+    assert!(!yaml.contains("root_case --manifest-path"));
+    assert!(yaml.contains(r#"max-score: 1"#));
+
+    // Reporter wiring still correct
+    assert!(yaml.contains(r#"UNIT-ADDS_RESULTS: "${{steps.unit-adds.outputs.result}}""#));
+    assert!(yaml.contains(r#"ROOT-CASE_RESULTS: "${{steps.root-case.outputs.result}}""#));
+    assert!(yaml.contains("runners: unit-adds,root-case"));
+
+    Ok(())
+}
