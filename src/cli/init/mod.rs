@@ -90,13 +90,13 @@ pub fn run(
             let manifest_path_dir = get_manifest_path_no_toml(p);
             let clippy_name = match manifest_path_dir.as_str() {
                 "." | "Cargo.toml" => "CLIPPY_STYLE_CHECK".into(),
-                _ => format!("CLIPPY_STYLE_CHECK_{}", manifest_path_dir)
+                _ => format!("CLIPPY_STYLE_CHECK_{}", manifest_path_dir),
             };
 
             // Simply use None if the Manifest path is "Cargo.toml"
             let manifest_path = match manifest_path_dir.as_str() {
                 "." | "Cargo.toml" => None,
-                _ => Some(p.to_string())
+                _ => Some(p.to_string()),
             };
 
             items.push(AutoTest {
@@ -156,7 +156,7 @@ struct TestWithManifest {
     manifest_path: Option<PathBuf>,
 }
 impl TestWithManifest {
-    fn get_distinct_manifest_paths(tests: &Vec<Self>, root: &Path) -> HashSet<String> {
+    fn get_distinct_manifest_paths(tests: &[Self], root: &Path) -> HashSet<String> {
         let fallback = PathBuf::from("Cargo.toml");
         tests
             .iter()
@@ -169,7 +169,10 @@ impl TestWithManifest {
 }
 
 fn get_manifest_path_no_toml(manifest_path_str: &str) -> String {
-    manifest_path_str.strip_suffix("/Cargo.toml").unwrap_or(&manifest_path_str).to_string()
+    manifest_path_str
+        .strip_suffix("/Cargo.toml")
+        .unwrap_or(manifest_path_str)
+        .to_string()
 }
 
 #[derive(Clone)]
