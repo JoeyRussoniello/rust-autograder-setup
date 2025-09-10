@@ -137,5 +137,22 @@ pub fn to_rel_unix_path(root: &Path, path: &Path) -> String {
     rel.to_string_lossy()
         .replace(std::path::MAIN_SEPARATOR, "/")
 }
+
+/// Safe wrapper to prevent accidental joins when root = tests_dir
+pub fn get_tests_dir(root: &Path, tests_dir_name: &Path) -> PathBuf {
+    let root_abs = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
+    let tests_abs = tests_dir_name
+        .canonicalize()
+        .unwrap_or_else(|_| tests_dir_name.to_path_buf());
+
+    if root_abs == tests_abs {
+        root.to_path_buf()
+    } else if tests_dir_name.is_absolute() {
+        tests_dir_name.to_path_buf()
+    } else {
+        root.join(tests_dir_name)
+    }
+}
+
 #[cfg(test)]
 pub mod tests;

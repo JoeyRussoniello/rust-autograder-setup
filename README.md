@@ -134,7 +134,7 @@ autograder-setup reset --help
 
 #### `init`
 
-Scans `src/` (recursively), finds test functions, and writes `.autograder/autograder.json`.
+Scans `.` (recursively), finds test functions, and writes `.autograder/autograder.json`.
 
 Options:
 
@@ -142,7 +142,7 @@ Options:
   -r, --root <ROOT>
           Root of the Rust project (defaults to current directory) [default: .]
   -t, --tests-dir <TESTS_DIR>
-          Location of all tests (defaults to the src directory) [default: src]
+          Location of all test cases (defaults to <root>) [default: .]
       --default-points <DEFAULT_POINTS>
           Default number of points per test [default: 1]
       --no-style-check
@@ -161,7 +161,7 @@ Examples:
 # Initialize an autograder.json in ../student-assignment/.autograder
 autograder-setup init --root ../student-assignment
 
-# Initialize an autograder.json by searching tests/ recursively
+# Initialize an autograder.json by searching ./tests/ recursively
 autograder-setup init --tests-dir tests
 
 # Initialize autograder.json with 5 as the default amount of points instead of 1

@@ -44,8 +44,8 @@ pub struct InitArgs {
     #[arg(short, long, default_value = ".")]
     pub root: PathBuf,
 
-    /// Location of all test cases (defaults to the src directory)
-    #[arg(short, long, default_value = "src")]
+    /// Location of all test cases (defaults to <root>)
+    #[arg(short, long, default_value = ".")]
     pub tests_dir: PathBuf,
 
     /// Default number of points per test
@@ -97,14 +97,22 @@ pub struct ResetArgs {
 pub fn run() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
-        Command::Init(a) => init::run(
-            &a.root,
-            &a.tests_dir,
-            a.default_points,
-            !a.no_style_check,
-            !a.no_commit_count,
-            a.num_commit_checks,
-        ),
+        Command::Init(a) => {
+            let mut tests_dir = &a.tests_dir;
+
+            // If tests_dir is default and root is not, use root for tests_dir
+            if a.tests_dir == PathBuf::from(".") && a.root != PathBuf::from(".") {
+                tests_dir = &a.root;
+            }
+            init::run(
+                &a.root,
+                tests_dir,
+                a.default_points,
+                !a.no_style_check,
+                !a.no_commit_count,
+                a.num_commit_checks,
+            )
+        }
         // Build has no args; default to current dir root like init would.
         Command::Build(a) => build::run(&a.root),
         Command::Table(a) => table::run(&a.root, !a.no_clipboard, a.to_readme),

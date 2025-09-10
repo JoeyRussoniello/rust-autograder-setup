@@ -12,7 +12,9 @@ use syn::punctuated::Punctuated;
 use syn::{Attribute, Expr, File, Item, ItemFn, Lit, Meta, visit::Visit};
 
 use crate::types::AutoTest;
-use crate::utils::{collect_rs_files_with_manifest, ensure_exists, to_rel_unix_path};
+use crate::utils::{
+    collect_rs_files_with_manifest, ensure_exists, get_tests_dir, to_rel_unix_path,
+};
 
 #[cfg(test)]
 mod tests;
@@ -25,8 +27,9 @@ pub fn run(
     commit_counts: bool,
     num_commit_checks: u32,
 ) -> Result<()> {
-    let tests_dir = root.join(tests_dir_name);
+    let tests_dir = get_tests_dir(root, tests_dir_name);
     ensure_exists(&tests_dir)?;
+    println!("Scanning {} for tests...", tests_dir.to_string_lossy());
 
     let files = collect_rs_files_with_manifest(&tests_dir)
         .with_context(|| format!("While scanning {}", tests_dir.to_string_lossy()))?;
