@@ -33,6 +33,7 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
             points: 2,
             docstring: "".into(),
             min_commits: None,
+            manifest_path: None,
         },
         AutoTest {
             name: "CLIPPY_STYLE_CHECK".into(),
@@ -40,6 +41,7 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
             points: 0,
             docstring: "".into(),
             min_commits: None,
+            manifest_path: None,
         },
         AutoTest {
             name: "tokio_async_test".into(),
@@ -47,6 +49,7 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
             points: 3,
             docstring: "".into(),
             min_commits: None,
+            manifest_path: None,
         },
     ];
     write_autograder_json(root, &tests)?;
@@ -98,6 +101,7 @@ fn compile_includes_clippy_command_when_points_positive() {
         points: 1,
         docstring: "".into(),
         min_commits: None,
+        manifest_path: None,
     }]);
     let out = ya.compile().expect("Unable to compile YAML");
 

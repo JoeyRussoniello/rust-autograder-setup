@@ -1,6 +1,5 @@
 use super::*;
-use std::fs::{self, File};
-use std::io::Write;
+use std::fs;
 use std::path::PathBuf;
 use tempfile::tempdir;
 
@@ -8,6 +7,11 @@ use tempfile::tempdir;
 
 #[test]
 fn collect_rs_files_finds_rs_recursively_and_ignores_others() -> anyhow::Result<()> {
+    use std::fs::{self, File};
+    use std::io::Write;
+    use std::path::PathBuf;
+    use tempfile::tempdir;
+
     // Arrange: temp dir with mixed contents
     let tmp = tempdir()?;
     let root = tmp.path();
@@ -34,18 +38,25 @@ fn collect_rs_files_finds_rs_recursively_and_ignores_others() -> anyhow::Result<
     let deep_txt = b_dir.join("deep.txt");
     File::create(&deep_txt)?.write_all(b"not rust")?;
 
-    // Act
-    let mut files = collect_rs_files(root)?;
+    let found = collect_rs_files_with_manifest(root)?;
+    let mut files: Vec<&PathBuf> = found.iter().map(|(p, _)| p).collect();
+
+    // Order of read_dir is not guaranteed; normalize for assertions
+    files.sort();
+
+    // Assert
+    let mut expected = vec![&hello_rs, &a_mod_rs, &deep_rs];
+    expected.sort();
+
+    assert_eq!(files, expected);
 
     // Order of read_dir is not guaranteed; normalize for assertions
     files.sort();
 
     // Assert: exactly the three .rs files, no others
-    let expected = {
-        let mut v = vec![hello_rs, a_mod_rs, deep_rs];
-        v.sort();
-        v
-    };
+    let mut expected = vec![&hello_rs, &a_mod_rs, &deep_rs];
+    expected.sort();
+
     assert_eq!(files, expected);
 
     Ok(())
@@ -54,7 +65,7 @@ fn collect_rs_files_finds_rs_recursively_and_ignores_others() -> anyhow::Result<
 #[test]
 fn collect_rs_files_empty_dir_is_ok() -> anyhow::Result<()> {
     let tmp = tempdir()?;
-    let files = collect_rs_files(tmp.path())?;
+    let files = collect_rs_files_with_manifest(tmp.path())?;
     assert!(files.is_empty());
     Ok(())
 }
@@ -133,4 +144,47 @@ fn filenames(paths: &[PathBuf]) -> Vec<String> {
         .collect();
     v.sort();
     v
+}
+
+#[test]
+fn collect_rs_files_attaches_nearest_manifest() -> anyhow::Result<()> {
+    use std::fs::{self, File};
+    use std::io::Write;
+    use tempfile::tempdir;
+
+    let tmp = tempdir()?;
+    let root = tmp.path();
+
+    // workspace under a/ (has its own Cargo.toml)
+    let a_dir = root.join("a");
+    fs::create_dir(&a_dir)?;
+    File::create(a_dir.join("Cargo.toml"))?
+        .write_all(b"[package]\nname=\"a\"\nversion=\"0.1.0\"\n")?;
+    let a_test = a_dir.join("mod.rs");
+    File::create(&a_test)?.write_all(b"// rust file")?;
+
+    // deeper file inherits a/'s Cargo.toml
+    let b_dir = a_dir.join("b");
+    fs::create_dir(&b_dir)?;
+    let b_test = b_dir.join("deep.rs");
+    File::create(&b_test)?.write_all(b"// rust file")?;
+
+    // root rust file with NO manifest at root
+    let root_rs = root.join("root.rs");
+    File::create(&root_rs)?.write_all(b"// rust file")?;
+
+    let found = collect_rs_files_with_manifest(root)?;
+
+    // helper to lookup manifest path for a given .rs
+    let manifest_for = |path: &std::path::Path| -> Option<std::path::PathBuf> {
+        found
+            .iter()
+            .find_map(|(p, m)| if p == path { m.clone() } else { None })
+    };
+
+    assert_eq!(manifest_for(&a_test), Some(a_dir.join("Cargo.toml")));
+    assert_eq!(manifest_for(&b_test), Some(a_dir.join("Cargo.toml")));
+    assert_eq!(manifest_for(&root_rs), None);
+
+    Ok(())
 }
