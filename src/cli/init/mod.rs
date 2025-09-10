@@ -99,11 +99,16 @@ pub fn run(
                 _ => Some(p.to_string()),
             };
 
+            let docstring = match manifest_path_dir.as_str() {
+                "." | "Cargo.toml" => "`cargo clippy` style check".to_string(),
+                _ => format!("`cargo clippy` style check for `{}`", manifest_path_dir),
+            };
+
             items.push(AutoTest {
                 name: clippy_name,
                 timeout: 10,
                 points: num_points,
-                docstring: "cargo clippy style check".to_string(),
+                docstring,
                 min_commits: None,
                 manifest_path,
             });
