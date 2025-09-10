@@ -29,24 +29,40 @@ jobs:
 "#;
 
 pub const YAML_INDENT: &str = "  ";
-pub fn collect_rs_files(dir: &Path) -> Result<Vec<PathBuf>> {
-    let mut out = Vec::new();
-    recurse(dir, &mut out)?;
-    Ok(out)
-}
 
-fn recurse(dir: &Path, out: &mut Vec<PathBuf>) -> Result<()> {
+fn recurse(
+    dir: &Path,
+    out: &mut Vec<(PathBuf, Option<PathBuf>)>,
+    current_manifest: Option<PathBuf>,
+) -> Result<()> {
+    // see if THIS dir has a Cargo.toml
+    let manifest_here = {
+        let m = dir.join("Cargo.toml");
+        if m.exists() {
+            Some(m)
+        } else {
+            current_manifest.clone()
+        }
+    };
+
     for entry in fs::read_dir(dir)? {
         let entry = entry?;
         let p = entry.path();
         let md = entry.metadata()?;
+
         if md.is_dir() {
-            recurse(&p, out)?;
+            recurse(&p, out, manifest_here.clone())?;
         } else if md.is_file() && p.extension().map(|e| e == "rs").unwrap_or(false) {
-            out.push(p);
+            out.push((p, manifest_here.clone()));
         }
     }
     Ok(())
+}
+
+pub fn collect_rs_files_with_manifest(dir: &Path) -> Result<Vec<(PathBuf, Option<PathBuf>)>> {
+    let mut out = Vec::new();
+    recurse(dir, &mut out, None)?;
+    Ok(out)
 }
 
 pub fn ensure_exists(tests_dir: &Path) -> Result<()> {
@@ -115,5 +131,11 @@ pub fn replace_commit_count_docstring(s: String, num_commits: u32) -> String {
     s.replace("##", &num_commits.to_string())
 }
 
+// Convert absolute path under `root` into a clean, unix-style relative string for GH actions
+pub fn to_rel_unix_path(root: &Path, path: &Path) -> String {
+    let rel = path.strip_prefix(root).unwrap_or(path).to_path_buf();
+    rel.to_string_lossy()
+        .replace(std::path::MAIN_SEPARATOR, "/")
+}
 #[cfg(test)]
 pub mod tests;

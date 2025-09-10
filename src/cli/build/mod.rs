@@ -211,6 +211,7 @@ fn infer_step_cmd(test: &AutoTest) -> StepCmd {
     // Default: cargo test by function name
     StepCmd::CargoTest {
         function_name: n.to_string(),
+        manifest_path: test.manifest_path.clone(),
     }
 }
 

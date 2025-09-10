@@ -12,6 +12,9 @@ pub struct AutoTest {
     // Only used when name maps to COMMIT_COUNT
     #[serde(default)]
     pub min_commits: Option<u32>,
+
+    #[serde(default)]
+    pub manifest_path: Option<String>,
 }
 impl MarkdownTableRow for AutoTest {
     fn column_names() -> Vec<&'static str> {
@@ -32,17 +35,32 @@ impl MarkdownTableRow for AutoTest {
 //-----------AutograderCommandTypes------------------
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum StepCmd {
-    CargoTest { function_name: String },
+    CargoTest {
+        function_name: String,
+        manifest_path: Option<String>,
+    },
     ClippyCheck,
-    CommitCount { min: u32 },
+    CommitCount {
+        min: u32,
+    },
 }
 
 impl StepCmd {
     pub fn command(&self) -> String {
         match self {
-            StepCmd::CargoTest { function_name } => {
-                format!("cargo test {} -- --exact", function_name.trim())
-            }
+            StepCmd::CargoTest {
+                function_name,
+                manifest_path,
+            } => match manifest_path {
+                Some(p) if !p.is_empty() => {
+                    format!(
+                        "cargo test {} --manifest-path {} -- --exact",
+                        function_name.trim(),
+                        p
+                    )
+                }
+                _ => format!("cargo test {} -- --exact", function_name.trim()),
+            },
             StepCmd::ClippyCheck => "cargo clippy -- -D warnings".to_string(),
             StepCmd::CommitCount { .. } => {
                 // ! Builder will ovewrite with the path to the shell script on disk.

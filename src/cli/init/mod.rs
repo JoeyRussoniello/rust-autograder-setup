@@ -1,5 +1,9 @@
 use anyhow::{Context, Result};
-use std::{fs, io::Write, path::Path};
+use std::{
+    fs,
+    io::Write,
+    path::{Path, PathBuf},
+};
 
 use syn::Path as SynPath;
 use syn::Token;
@@ -8,7 +12,7 @@ use syn::punctuated::Punctuated;
 use syn::{Attribute, Expr, File, Item, ItemFn, Lit, Meta, visit::Visit};
 
 use crate::types::AutoTest;
-use crate::utils::{collect_rs_files, ensure_exists};
+use crate::utils::{collect_rs_files_with_manifest, ensure_exists, to_rel_unix_path};
 
 #[cfg(test)]
 mod tests;
@@ -24,21 +28,27 @@ pub fn run(
     let tests_dir = root.join(tests_dir_name);
     ensure_exists(&tests_dir)?;
 
-    let files = collect_rs_files(&tests_dir)
+    let files = collect_rs_files_with_manifest(&tests_dir)
         .with_context(|| format!("While scanning {}", tests_dir.to_string_lossy()))?;
     if files.is_empty() {
         anyhow::bail!("No `.rs` files found under {}", tests_dir.to_string_lossy());
     }
 
-    let mut tests: Vec<Test> = Vec::new();
-    for file in files {
+    let mut tests: Vec<TestWithManifest> = Vec::new();
+
+    for (file, nearest_manifest) in files {
         let src = fs::read_to_string(&file)
             .with_context(|| format!("Failed to read {}", file.to_string_lossy()))?;
 
         let file_tests = extract_tests(&src)
             .with_context(|| format!("Failed to parse {}", file.to_string_lossy()))?;
 
-        file_tests.iter().for_each(|t| tests.push(t.clone()));
+        for t in file_tests {
+            tests.push(TestWithManifest {
+                test: t,
+                manifest_path: nearest_manifest.clone(),
+            })
+        }
     }
 
     if tests.is_empty() {
@@ -50,16 +60,23 @@ pub fn run(
         .with_context(|| format!("Failed to create {}", out_dir.to_string_lossy()))?;
     let out_path = out_dir.join("autograder.json");
 
+    // Build AutoTests, attaching manifest_path when present
     let mut items: Vec<AutoTest> = tests
         .into_iter()
-        .map(|test| AutoTest {
-            name: test.name,
-            timeout: 10,
-            points: num_points,
-            docstring: test.docstring,
-            min_commits: None,
+        .map(|tw| {
+            let manifest_path = tw.manifest_path.as_ref().map(|m| to_rel_unix_path(root, m)); // unix-style, relative to repo root
+
+            AutoTest {
+                name: tw.test.name,
+                timeout: 10,
+                points: num_points,
+                docstring: tw.test.docstring,
+                min_commits: None,
+                manifest_path, // <-- NEW field populated here
+            }
         })
         .collect();
+
     if style_check {
         items.push(AutoTest {
             name: "CLIPPY_STYLE_CHECK".to_string(),
@@ -67,6 +84,7 @@ pub fn run(
             points: num_points,
             docstring: "cargo clippy style check".to_string(),
             min_commits: None,
+            manifest_path: None,
         });
     }
 
@@ -79,6 +97,7 @@ pub fn run(
                 // ## Left because table command will replace dynamically
                 docstring: "Ensures at least ## commits.".to_string(),
                 min_commits: Some(i),
+                manifest_path: None,
             });
         }
     }
@@ -106,6 +125,12 @@ pub fn extract_tests(src: &str) -> Result<Vec<Test>> {
     let mut finder = TestFinder::default();
     finder.visit_file(&file);
     Ok(finder.tests)
+}
+
+// * Keep test manifest logic outside of test AST visiter
+struct TestWithManifest {
+    test: Test,
+    manifest_path: Option<PathBuf>,
 }
 
 #[derive(Clone)]
