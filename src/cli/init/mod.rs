@@ -1,5 +1,6 @@
 use anyhow::{Context, Result};
 use std::{
+    collections::HashSet,
     fs,
     io::Write,
     path::{Path, PathBuf},
@@ -65,6 +66,7 @@ pub fn run(
 
     // Build AutoTests, attaching manifest_path when present
     let mut items: Vec<AutoTest> = tests
+        .clone()
         .into_iter()
         .map(|tw| {
             let manifest_path = tw.manifest_path.as_ref().map(|m| to_rel_unix_path(root, m)); // unix-style, relative to repo root
@@ -75,19 +77,36 @@ pub fn run(
                 points: num_points,
                 docstring: tw.test.docstring,
                 min_commits: None,
-                manifest_path, // <-- NEW field populated here
+                manifest_path,
             }
         })
         .collect();
 
     if style_check {
-        items.push(AutoTest {
-            name: "CLIPPY_STYLE_CHECK".to_string(),
-            timeout: 10,
-            points: num_points,
-            docstring: "cargo clippy style check".to_string(),
-            min_commits: None,
-            manifest_path: None,
+        //Create autotests for each distinct manifest path we found
+        let manifest_paths = TestWithManifest::get_distinct_manifest_paths(&tests, root);
+        manifest_paths.iter().for_each(|p| {
+            //Get the manifest path to run clippy into
+            let manifest_path_dir = get_manifest_path_no_toml(p);
+            let clippy_name = match manifest_path_dir.as_str() {
+                "." | "Cargo.toml" => "CLIPPY_STYLE_CHECK".into(),
+                _ => format!("CLIPPY_STYLE_CHECK_{}", manifest_path_dir)
+            };
+
+            // Simply use None if the Manifest path is "Cargo.toml"
+            let manifest_path = match manifest_path_dir.as_str() {
+                "." | "Cargo.toml" => None,
+                _ => Some(p.to_string())
+            };
+
+            items.push(AutoTest {
+                name: clippy_name,
+                timeout: 10,
+                points: num_points,
+                docstring: "cargo clippy style check".to_string(),
+                min_commits: None,
+                manifest_path,
+            });
         });
     }
 
@@ -131,9 +150,26 @@ pub fn extract_tests(src: &str) -> Result<Vec<Test>> {
 }
 
 // * Keep test manifest logic outside of test AST visiter
+#[derive(Clone)]
 struct TestWithManifest {
     test: Test,
     manifest_path: Option<PathBuf>,
+}
+impl TestWithManifest {
+    fn get_distinct_manifest_paths(tests: &Vec<Self>, root: &Path) -> HashSet<String> {
+        let fallback = PathBuf::from("Cargo.toml");
+        tests
+            .iter()
+            .map(|t| {
+                let manifest = t.manifest_path.as_ref().unwrap_or(&fallback);
+                to_rel_unix_path(root, manifest)
+            })
+            .collect()
+    }
+}
+
+fn get_manifest_path_no_toml(manifest_path_str: &str) -> String {
+    manifest_path_str.strip_suffix("/Cargo.toml").unwrap_or(&manifest_path_str).to_string()
 }
 
 #[derive(Clone)]

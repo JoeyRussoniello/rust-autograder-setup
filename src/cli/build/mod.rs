@@ -113,7 +113,7 @@ impl YAMLAutograder {
                 StepCmd::CargoTest { .. } => {
                     self.compile_test_step(test, &step.command());
                 }
-                StepCmd::ClippyCheck => {
+                StepCmd::ClippyCheck {..} => {
                     self.compile_test_step(test, &step.command());
                 }
 
@@ -194,10 +194,12 @@ impl YAMLAutograder {
 
 fn infer_step_cmd(test: &AutoTest) -> StepCmd {
     let n = test.name.trim();
-
+    let manifest_path = test.manifest_path.clone();
     // Style check
-    if n.eq_ignore_ascii_case("CLIPPY_STYLE_CHECK") {
-        return StepCmd::ClippyCheck;
+    if n.to_ascii_lowercase().contains("clippy_style_check") {
+        return StepCmd::ClippyCheck{
+            manifest_path
+        };
     }
 
     // Commit count
@@ -211,7 +213,7 @@ fn infer_step_cmd(test: &AutoTest) -> StepCmd {
     // Default: cargo test by function name
     StepCmd::CargoTest {
         function_name: n.to_string(),
-        manifest_path: test.manifest_path.clone(),
+        manifest_path,
     }
 }
 

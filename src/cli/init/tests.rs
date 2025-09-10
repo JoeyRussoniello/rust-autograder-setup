@@ -1,6 +1,7 @@
-use super::{Test, extract_tests};
+use super::*;
 use crate::utils::read_autograder_config;
 use std::fs;
+use std::path::PathBuf;
 use tempfile::tempdir;
 
 /// Helper function for test cases
@@ -457,4 +458,71 @@ fn does_not_create_commit_count_steps_if_disabled() {
         .filter(|t| t.name.starts_with("COMMIT_COUNT"))
         .collect();
     assert_eq!(commit_steps.len(), 0);
+}
+
+#[test]
+fn manifest_paths_are_distinct_and_relative() {
+    let root = PathBuf::from("/repo");
+    let test1 = TestWithManifest {
+        test: Test {
+            name: "a".to_string(),
+            docstring: "".to_string(),
+        },
+        manifest_path: Some(root.join("Cargo.toml")),
+    };
+    let test2 = TestWithManifest {
+        test: Test {
+            name: "b".to_string(),
+            docstring: "".to_string(),
+        },
+        manifest_path: Some(root.join("sub/Cargo.toml")),
+    };
+    let test3 = TestWithManifest {
+        test: Test {
+            name: "c".to_string(),
+            docstring: "".to_string(),
+        },
+        manifest_path: None,
+    };
+
+    let tests = vec![test1, test2, test3];
+    let paths = TestWithManifest::get_distinct_manifest_paths(&tests, &root);
+
+    // Should contain "Cargo.toml", "sub/Cargo.toml"
+    assert!(paths.contains("Cargo.toml"));
+    assert!(paths.contains("sub/Cargo.toml"));
+    assert_eq!(paths.len(), 2); // Only two distinct paths
+}
+
+#[test]
+fn manifest_path_none_uses_fallback() {
+    let root = PathBuf::from("/repo");
+    let test = TestWithManifest {
+        test: Test {
+            name: "a".to_string(),
+            docstring: "".to_string(),
+        },
+        manifest_path: None,
+    };
+    let tests = vec![test];
+    let paths = TestWithManifest::get_distinct_manifest_paths(&tests, &root);
+    assert!(paths.contains("Cargo.toml"));
+    assert_eq!(paths.len(), 1);
+}
+
+#[test]
+fn manifest_path_absolute_is_preserved() {
+    let root = PathBuf::from("/repo");
+    let abs_manifest = PathBuf::from("/other/path/Cargo.toml");
+    let test = TestWithManifest {
+        test: Test {
+            name: "a".to_string(),
+            docstring: "".to_string(),
+        },
+        manifest_path: Some(abs_manifest.clone()),
+    };
+    let tests = vec![test];
+    let paths = TestWithManifest::get_distinct_manifest_paths(&tests, &root);
+    // Should contain the absolute path as a unix-style string
+    assert!(paths.contains("/other/path/Cargo.toml"));
 }

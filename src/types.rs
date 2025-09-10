@@ -39,7 +39,9 @@ pub enum StepCmd {
         function_name: String,
         manifest_path: Option<String>,
     },
-    ClippyCheck,
+    ClippyCheck {
+        manifest_path: Option<String>
+    },
     CommitCount {
         min: u32,
     },
@@ -61,7 +63,12 @@ impl StepCmd {
                 }
                 _ => format!("cargo test {} -- --exact", function_name.trim()),
             },
-            StepCmd::ClippyCheck => "cargo clippy -- -D warnings".to_string(),
+            StepCmd::ClippyCheck{manifest_path} => match manifest_path {
+                Some(p) if !p.is_empty() && p != "." => {
+                    format!("cargo clippy --manifest-path {} -- -D warnings", p)
+                }
+                _ => "cargo clippy -- -D warnings".to_string()
+            },
             StepCmd::CommitCount { .. } => {
                 // ! Builder will ovewrite with the path to the shell script on disk.
                 String::new()
