@@ -134,7 +134,7 @@ autograder-setup reset --help
 
 #### `init`
 
-Scans `.` (recursively), finds test functions, and writes `.autograder/autograder.json`.
+Scans `.` (recursively), finds test functions, and writes `.autograder/autograder.json`. Offers support for nested rust directorie.
 
 Options:
 
@@ -196,13 +196,14 @@ Schema:
 | points  | number | yes      | Max score for this test (default 1)          |
 | docstring| string| yes      | The docstring pulled from the test case      |
 | num_commits | number | no | The number of commits required to earn points for a `COMMIT_COUNT` step |
+| manifest_path | string | no | The manifest path of the test's rust project `Cargo.toml` file |
 
 Example:
 
 ```json
 [
-  { "name": "test_func_1", "timeout": 10, "points": 1, "docstring": "a test function", "num_commits": null},
-  { "name": "COMMIT_COUNT_0", "timeout": 10, "points": 1, "docstring": "Ensures at least ## commits.", "num_commits": 5}
+  { "name": "test_func_1", "timeout": 10, "points": 1, "docstring": "a test function", "num_commits": null, "manifest_path": "Cargo.toml"},
+  { "name": "COMMIT_COUNT_0", "timeout": 10, "points": 1, "docstring": "Ensures at least ## commits.", "num_commits": 5, "manifest_path": null}
 ] 
 ```
 
