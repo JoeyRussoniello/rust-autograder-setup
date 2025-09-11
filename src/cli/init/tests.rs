@@ -1,3 +1,4 @@
+use super::scan::{Test, extract_tests};
 use super::*;
 use crate::utils::read_autograder_config;
 use std::fs;

@@ -39,7 +39,7 @@ fn collect_rs_files_finds_rs_recursively_and_ignores_others() -> anyhow::Result<
     File::create(&deep_txt)?.write_all(b"not rust")?;
 
     let found = collect_rs_files_with_manifest(root)?;
-    let mut files: Vec<&PathBuf> = found.iter().map(|(p, _)| p).collect();
+    let mut files: Vec<&PathBuf> = found.iter().map(|p| &p.path).collect();
 
     // Order of read_dir is not guaranteed; normalize for assertions
     files.sort();
@@ -177,9 +177,13 @@ fn collect_rs_files_attaches_nearest_manifest() -> anyhow::Result<()> {
 
     // helper to lookup manifest path for a given .rs
     let manifest_for = |path: &std::path::Path| -> Option<std::path::PathBuf> {
-        found
-            .iter()
-            .find_map(|(p, m)| if p == path { m.clone() } else { None })
+        found.iter().find_map(|f| {
+            if f.path == path {
+                f.manifest_path.clone()
+            } else {
+                None
+            }
+        })
     };
 
     assert_eq!(manifest_for(&a_test), Some(a_dir.join("Cargo.toml")));
