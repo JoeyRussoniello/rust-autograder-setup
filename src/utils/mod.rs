@@ -1,5 +1,5 @@
 use crate::types::AutoTest;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use std::fs;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
@@ -30,11 +30,18 @@ jobs:
 
 pub const YAML_INDENT: &str = "  ";
 
-fn recurse(
-    dir: &Path,
-    out: &mut Vec<(PathBuf, Option<PathBuf>)>,
-    current_manifest: Option<PathBuf>,
-) -> Result<()> {
+/// A wrapper struct used to simplify manifest path locations
+pub struct RustFile {
+    pub path: PathBuf,
+    pub manifest_path: Option<PathBuf>,
+}
+impl RustFile {
+    pub fn get_path_string(&self) -> Result<String> {
+        fs::read_to_string(&self.path)
+            .with_context(|| format!("Failed to read {}", &self.path.to_string_lossy()))
+    }
+}
+fn recurse(dir: &Path, out: &mut Vec<RustFile>, current_manifest: Option<PathBuf>) -> Result<()> {
     // see if THIS dir has a Cargo.toml
     let manifest_here = {
         let m = dir.join("Cargo.toml");
@@ -53,14 +60,17 @@ fn recurse(
         if md.is_dir() {
             recurse(&p, out, manifest_here.clone())?;
         } else if md.is_file() && p.extension().map(|e| e == "rs").unwrap_or(false) {
-            out.push((p, manifest_here.clone()));
+            out.push(RustFile {
+                path: p,
+                manifest_path: manifest_here.clone(),
+            });
         }
     }
     Ok(())
 }
 
-pub fn collect_rs_files_with_manifest(dir: &Path) -> Result<Vec<(PathBuf, Option<PathBuf>)>> {
-    let mut out = Vec::new();
+pub fn collect_rs_files_with_manifest(dir: &Path) -> Result<Vec<RustFile>> {
+    let mut out: Vec<RustFile> = Vec::new();
     recurse(dir, &mut out, None)?;
     Ok(out)
 }
