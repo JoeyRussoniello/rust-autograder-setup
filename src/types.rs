@@ -54,7 +54,7 @@ impl StepCmd {
                 function_name,
                 manifest_path,
             } => match manifest_path {
-                Some(p) if !p.is_empty() => {
+                Some(p) if !p.is_empty() && p != "Cargo.toml" => {
                     format!(
                         "cargo test {} --manifest-path {} -- --exact",
                         function_name.trim(),

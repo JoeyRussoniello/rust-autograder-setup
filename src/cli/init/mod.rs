@@ -69,7 +69,14 @@ pub fn run(
         .clone()
         .into_iter()
         .map(|tw| {
-            let manifest_path = tw.manifest_path.as_ref().map(|m| to_rel_unix_path(root, m)); // unix-style, relative to repo root
+            let mut manifest_path = tw.manifest_path.as_ref().map(|m| to_rel_unix_path(root, m)); // unix-style, relative to repo root
+            
+            // * Don't manifest path to ./Cargo.toml for brevity and easier to read jsons/YAMLs
+            if let Some(p) = &manifest_path
+                && p == "Cargo.toml"
+            {
+                manifest_path = None;
+            }
 
             AutoTest {
                 name: tw.test.name,
