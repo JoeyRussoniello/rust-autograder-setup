@@ -62,15 +62,15 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
     // 1) Preamble is at the top
     assert!(yaml.starts_with(YAML_PREAMBLE));
 
-    // 2) Steps for graded tests exist with quoted command and -- --exact
+    // 2) Steps for graded tests exist with quoted command
     assert!(yaml.contains(r#"- name: test_one"#));
     assert!(yaml.contains(r#"test-name: "test_one""#));
-    assert!(yaml.contains(r#"command: "cargo test test_one -- --exact""#));
+    assert!(yaml.contains(r#"command: "cargo test test_one""#));
     assert!(yaml.contains(r#"max-score: 2"#));
 
     assert!(yaml.contains(r#"- name: tokio_async_test"#));
     assert!(yaml.contains(r#"test-name: "tokio_async_test""#));
-    assert!(yaml.contains(r#"command: "cargo test tokio_async_test -- --exact""#));
+    assert!(yaml.contains(r#"command: "cargo test tokio_async_test""#));
     assert!(yaml.contains(r#"max-score: 3"#));
 
     // 3) 0-point clippy is pruned from steps & env
@@ -213,15 +213,15 @@ fn run_includes_manifest_path_when_present() -> anyhow::Result<()> {
     // Test with manifest_path gets the flag inserted before `-- --exact`
     assert!(yaml.contains(r#"- name: unit_adds"#));
     assert!(yaml.contains(r#"test-name: "unit_adds""#));
-    assert!(yaml.contains(
-        r#"command: "cargo test unit_adds --manifest-path questions/q1/Cargo.toml -- --exact""#
-    ));
+    assert!(
+        yaml.contains(r#"command: "cargo test unit_adds --manifest-path questions/q1/Cargo.toml""#)
+    );
     assert!(yaml.contains(r#"max-score: 2"#));
 
     // Test without manifest_path should NOT include the flag
     assert!(yaml.contains(r#"- name: root_case"#));
     assert!(yaml.contains(r#"test-name: "root_case""#));
-    assert!(yaml.contains(r#"command: "cargo test root_case -- --exact""#));
+    assert!(yaml.contains(r#"command: "cargo test root_case""#));
     assert!(!yaml.contains("root_case --manifest-path"));
     assert!(yaml.contains(r#"max-score: 1"#));
 

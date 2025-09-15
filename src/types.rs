@@ -55,13 +55,9 @@ impl StepCmd {
                 manifest_path,
             } => match manifest_path {
                 Some(p) if !p.is_empty() && p != "Cargo.toml" => {
-                    format!(
-                        "cargo test {} --manifest-path {} -- --exact",
-                        function_name.trim(),
-                        p
-                    )
+                    format!("cargo test {} --manifest-path {}", function_name.trim(), p)
                 }
-                _ => format!("cargo test {} -- --exact", function_name.trim()),
+                _ => format!("cargo test {}", function_name.trim()),
             },
             StepCmd::ClippyCheck { manifest_path } => match manifest_path {
                 Some(p) if !p.is_empty() && p != "." => {

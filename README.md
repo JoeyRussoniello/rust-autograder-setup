@@ -239,7 +239,8 @@ Name/ID rules:
 
 - **Step name** / `test-name`: uses name verbatim for all `cargo test` functions, and all caps names for other autograder steps (ex: `COMMIT_COUNTS`).
 - **Step id**: slugified `name` (lowercase; spaces/non-alnum → `-`; collapsed).
-- **Command**: `cargo test <name> -- --exact` (uses name verbatim).
+- **Command**: `cargo test <name>` (uses name verbatim).
+  - In future update, will use the `--exact` flag, but for now, this behavior is unsupported **so NO tests should share a name/prefix**
 
 Example:
 
@@ -271,7 +272,7 @@ jobs:
         with:
           test-name: "basic_add_small_numbers"
           setup-command: ""
-          command: "cargo test basic_add_small_numbers -- --exact"
+          command: "cargo test basic_add_small_numbers"
           timeout: 10
           max-score: 1
 
@@ -281,7 +282,7 @@ jobs:
         with:
           test-name: "basic_add_with_negatives"
           setup-command: ""
-          command: "cargo test basic_add_with_negatives -- --exact"
+          command: "cargo test basic_add_with_negatives"
           timeout: 10
           max-score: 1
 
