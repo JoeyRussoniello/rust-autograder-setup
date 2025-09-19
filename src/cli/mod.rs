@@ -63,6 +63,10 @@ pub struct InitArgs {
     /// Number of commit count checks (default: 1).
     #[arg(long = "num-commit-checks", default_value_t = 1)]
     pub num_commit_checks: u32,
+
+    /// Require a minimum number of tests (default: 0, set to 1 if flag is passed without a value)
+    #[arg(long = "require-tests", default_value_t = 0, num_args(0..=1))]
+    pub require_tests: u32,
 }
 
 #[derive(Args, Debug)]
@@ -111,6 +115,7 @@ pub fn run() -> Result<()> {
                 !a.no_style_check,
                 !a.no_commit_count,
                 a.num_commit_checks,
+                a.require_tests
             )
         }
         // Build has no args; default to current dir root like init would.

@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
 use crate::types::{AutoTest, StepCmd};
-use crate::utils::{YAML_INDENT, YAML_PREAMBLE, read_autograder_config, slug_id, yaml_quote};
+use crate::utils::{YAML_INDENT, YAML_PREAMBLE, read_autograder_config, slug_id, yaml_quote, replace_double_hashtag};
 use std::fs::{File, create_dir_all};
 
 pub fn run(root: &Path) -> Result<()> {
@@ -106,20 +106,26 @@ impl YAMLAutograder {
     fn compile_test_steps(&mut self) -> Result<()> {
         //Clone tests to avoid an immutable borrow on self
         let tests = self.tests.clone();
+        let num_cargo_tests = tests
+            .iter()
+            .map(|t| infer_step_cmd(t))
+            .filter(|s| matches!(s, StepCmd::CargoTest{..}))
+            .count() as u32;
+        
         for test in tests.iter() {
             let step = infer_step_cmd(test);
 
             match step {
-                StepCmd::CargoTest { .. } => {
-                    self.compile_test_step(test, &step.command());
-                }
-                StepCmd::ClippyCheck { .. } => {
-                    self.compile_test_step(test, &step.command());
-                }
-
                 StepCmd::CommitCount { min } => {
                     write_commit_count_shell(&self.root, min, &get_commit_count_file_name(test))?;
                     self.compile_commit_count(test);
+                }
+                StepCmd::TestCount {..} => {
+                    let base_command = step.command();
+                    self.compile_test_step(test, &replace_double_hashtag(base_command, num_cargo_tests))
+                }
+                _ => {
+                    self.compile_test_step(test, &step.command())
                 }
             }
             self.autograder_content.push('\n');
@@ -208,6 +214,12 @@ fn infer_step_cmd(test: &AutoTest) -> StepCmd {
         };
     }
 
+    if n.starts_with("TEST_COUNT") {
+        return StepCmd::TestCount {
+            min: test.min_commits.unwrap()
+        }
+    }
+    
     // Default: cargo test by function name
     StepCmd::CargoTest {
         function_name: n.to_string(),

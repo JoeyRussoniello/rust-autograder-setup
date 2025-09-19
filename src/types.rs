@@ -1,4 +1,4 @@
-use crate::utils::replace_commit_count_docstring;
+use crate::utils::replace_double_hashtag;
 use markdown_tables::MarkdownTableRow;
 use serde::{Deserialize, Serialize};
 
@@ -9,7 +9,7 @@ pub struct AutoTest {
     pub timeout: u64,
     pub points: u32,
 
-    // Only used when name maps to COMMIT_COUNT
+    // Only used when name maps to COMMIT_COUNT OR TEST_CASES
     #[serde(default)]
     pub min_commits: Option<u32>,
 
@@ -23,7 +23,7 @@ impl MarkdownTableRow for AutoTest {
 
     fn column_values(&self) -> Vec<String> {
         let doc = if let Some(min_commits) = self.min_commits {
-            replace_commit_count_docstring(self.docstring.clone(), min_commits)
+            replace_double_hashtag(self.docstring.clone(), min_commits)
         } else {
             self.docstring.clone()
         };
@@ -43,6 +43,9 @@ pub enum StepCmd {
         manifest_path: Option<String>,
     },
     CommitCount {
+        min: u32,
+    },
+    TestCount {
         min: u32,
     },
 }
@@ -68,6 +71,12 @@ impl StepCmd {
             StepCmd::CommitCount { .. } => {
                 // ! Builder will ovewrite with the path to the shell script on disk.
                 String::new()
+            }
+            StepCmd::TestCount { min } => {
+                format!(
+                    r#"cargo test -- --list | tail -1 | awk '{{print $1}}' | awk '{{if ($1 < {}+N) {{print "Too few tests ("$1-N") expected {}"; exit 1}}}}'"#,
+                    min, min
+                )
             }
         }
     }

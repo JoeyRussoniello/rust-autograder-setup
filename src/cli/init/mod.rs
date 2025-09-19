@@ -17,6 +17,7 @@ pub fn run(
     style_check: bool,
     commit_counts: bool,
     num_commit_checks: u32,
+    require_tests: u32,
 ) -> Result<()> {
     let tests_dir = get_tests_dir(root, tests_dir_name);
     ensure_exists(&tests_dir)?;
@@ -117,6 +118,18 @@ fn commit_count_autotests(n: u32, points: u32) -> Vec<AutoTest> {
             manifest_path: None,
         })
         .collect()
+}
+
+///! To Really implement, must allow multiple test count autotests, and MUST have manifest-path logic
+fn test_count_autotests(required_tests: u32, points: u32) -> AutoTest {
+    AutoTest{
+        name: format!("TEST_COUNT"),
+        timeout: 10,
+        points,
+        docstring: format!("Submission has at least {} tests", required_tests),
+        min_commits: Some(required_tests),
+        manifest_path: None,
+    }
 }
 
 /// Turn ".../Cargo.toml" into "member" or "." for workspace root.

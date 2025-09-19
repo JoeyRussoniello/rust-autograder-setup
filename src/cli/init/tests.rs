@@ -394,6 +394,7 @@ fn creates_single_commit_count_step_by_default() {
         false, // style_check
         true,  // commit_counts
         1,     // num_commit_checks
+        0
     )
     .unwrap();
 
@@ -421,6 +422,7 @@ fn creates_multiple_commit_count_steps() {
         false, // style_check
         true,  // commit_counts
         3,     // num_commit_checks
+        0
     )
     .unwrap();
 
@@ -450,6 +452,7 @@ fn does_not_create_commit_count_steps_if_disabled() {
         false, // style_check
         false, // commit_counts
         5,     // num_commit_checks (should be ignored)
+        0
     )
     .unwrap();
 
