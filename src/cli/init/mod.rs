@@ -1,12 +1,12 @@
-use anyhow::{Context, Result};
-use std::{fs, io::Write, path::Path};
 use crate::types::AutoTest;
 use crate::utils::{collect_rs_files_with_manifest, ensure_exists, get_tests_dir};
+use anyhow::{Context, Result};
+use std::{fs, io::Write, path::Path};
 
-use scan::{TestWithManifest, find_all_tests};
 use functions::{clippy_autotests, commit_count_autotests, test_count_autotests};
-mod scan;
+use scan::{TestWithManifest, find_all_tests};
 mod functions;
+mod scan;
 #[cfg(test)]
 mod tests;
 
@@ -59,7 +59,11 @@ pub fn run(
     }
 
     if require_tests > 0 {
-        items.extend(test_count_autotests(&manifest_paths, num_points, require_tests));
+        items.extend(test_count_autotests(
+            &manifest_paths,
+            num_points,
+            require_tests,
+        ));
     }
 
     let json = serde_json::to_string_pretty(&items)?;

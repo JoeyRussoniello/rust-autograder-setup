@@ -115,7 +115,7 @@ pub fn run() -> Result<()> {
                 !a.no_style_check,
                 !a.no_commit_count,
                 a.num_commit_checks,
-                a.require_tests
+                a.require_tests,
             )
         }
         // Build has no args; default to current dir root like init would.

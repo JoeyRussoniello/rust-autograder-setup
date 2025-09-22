@@ -1,14 +1,9 @@
-/// A helper module for individual AutoTest Creation
-
-use std::collections::HashSet;
 use crate::types::AutoTest;
+/// A helper module for individual AutoTest Creation
+use std::collections::HashSet;
 
-
-/// ! Consumes manifest_paths. Can be reworked if manifest paths are needed for something else
-pub fn clippy_autotests(
-    manifest_paths: &HashSet<String>,
-    points: u32,
-) -> Vec<AutoTest> {
+/// Collects manifest_paths into different clippy checks
+pub fn clippy_autotests(manifest_paths: &HashSet<String>, points: u32) -> Vec<AutoTest> {
     manifest_paths
         .iter()
         .map(|mp| clippy_autotest_for(mp, points))
@@ -58,7 +53,11 @@ pub fn commit_count_autotests(n: u32, points: u32) -> Vec<AutoTest> {
 }
 
 /// Count test cases per manifest path
-pub fn test_count_autotests(manifest_paths: &HashSet<String>, points:u32, required_tests: u32) -> Vec<AutoTest>{
+pub fn test_count_autotests(
+    manifest_paths: &HashSet<String>,
+    points: u32,
+    required_tests: u32,
+) -> Vec<AutoTest> {
     manifest_paths
         .iter()
         .map(|mp| test_count_autotest_for(mp, points, required_tests))
@@ -72,11 +71,14 @@ fn test_count_autotest_for(manifest_path: &str, points: u32, required_tests: u32
     let docstring = if stripped_path == "." || stripped_path == "Cargo.toml" {
         format!("Submission has at least {} tests", required_tests)
     } else {
-        format!("{} submission has at least {} tests", stripped_path, required_tests)
+        format!(
+            "{} submission has at least {} tests",
+            stripped_path, required_tests
+        )
     };
-    
-    AutoTest{
-        name: format!("TEST_COUNT"),
+
+    AutoTest {
+        name: format!("TEST_COUNT_{}", manifest_path.to_uppercase()),
         timeout: 10,
         points,
         docstring,
