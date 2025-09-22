@@ -5,6 +5,7 @@ use crate::types::{AutoTest, StepCmd};
 use crate::utils::{
     YAML_INDENT, YAML_PREAMBLE, read_autograder_config, replace_double_hashtag, slug_id, yaml_quote,
 };
+use std::collections::HashMap;
 use std::fs::{File, create_dir_all};
 
 pub fn run(root: &Path) -> Result<()> {
@@ -109,13 +110,22 @@ impl YAMLAutograder {
         //Clone tests to avoid an immutable borrow on self
         let tests = self.tests.clone();
 
-        // Count the number of `cargo tests` present in the module by default.
-
-        let num_cargo_tests = tests
+        // Count the number of `cargo tests` present in each manifest path
+        let counts_by_manifest: HashMap<Option<String>, u32> = tests
             .iter()
             .map(infer_step_cmd)
-            .filter(|s| matches!(s, StepCmd::CargoTest { .. }))
-            .count() as u32;
+            .filter_map(|s| {
+                if let StepCmd::CargoTest { manifest_path, .. } = s {
+                    // manifest_path is already an Option<String>, just return it
+                    Some(manifest_path)
+                } else {
+                    None
+                }
+            })
+            .fold(HashMap::new(), |mut acc, path| {
+                *acc.entry(path).or_insert(0) += 1;
+                acc
+            });
 
         for test in tests.iter() {
             let step = infer_step_cmd(test);
@@ -127,9 +137,12 @@ impl YAMLAutograder {
                 }
                 StepCmd::TestCount { .. } => {
                     let base_command = step.command();
+                    let mp = &test.manifest_path;
+                    // ? Maybe revisit defaulting to zero
+                    let num_cargo_tests = counts_by_manifest.get(mp).unwrap_or(&0);
                     self.compile_test_step(
                         test,
-                        &replace_double_hashtag(base_command, num_cargo_tests),
+                        &replace_double_hashtag(base_command, *num_cargo_tests),
                     )
                 }
                 _ => self.compile_test_step(test, &step.command()),
