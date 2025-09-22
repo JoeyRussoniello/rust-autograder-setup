@@ -9,11 +9,15 @@ pub struct AutoTest {
     pub timeout: u64,
     pub points: u32,
 
-    // Only used when name maps to COMMIT_COUNT OR TEST_CASES
-    #[serde(default)]
+    // Only used when name maps to COMMIT_COUNT
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub min_commits: Option<u32>,
 
-    #[serde(default)]
+    // Only used when name maps to TEST_COUNT
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub min_tests: Option<u32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub manifest_path: Option<String>,
 }
 impl MarkdownTableRow for AutoTest {

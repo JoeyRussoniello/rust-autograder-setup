@@ -93,6 +93,7 @@ impl TestWithManifest {
             points: num_points,
             docstring: self.test.docstring,
             min_commits: None,
+            min_tests: None,
             manifest_path,
         }
     }

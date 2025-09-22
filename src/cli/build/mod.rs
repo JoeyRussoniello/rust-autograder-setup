@@ -222,7 +222,7 @@ fn infer_step_cmd(test: &AutoTest) -> StepCmd {
 
     if n.starts_with("TEST_COUNT") {
         return StepCmd::TestCount {
-            min: test.min_commits.unwrap(),
+            min: test.min_tests.unwrap(),
             manifest_path,
         };
     }

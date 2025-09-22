@@ -65,7 +65,7 @@ pub struct InitArgs {
     pub num_commit_checks: u32,
 
     /// Require a minimum number of tests (default: 0, set to 1 if flag is passed without a value)
-    #[arg(long = "require-tests", default_value_t = 0, num_args(0..=1))]
+    #[arg(long = "require-tests", default_value_t = 0, default_missing_value = "1", num_args(0..=1))]
     pub require_tests: u32,
 }
 
@@ -191,5 +191,102 @@ mod tests {
         let msg = err.to_string();
         assert!(msg.contains("Usage") || msg.contains("USAGE"));
         assert!(msg.contains("init") && msg.contains("build"));
+    }
+
+    #[test]
+    fn parse_init_require_tests_default_is_zero() {
+        let cli = Cli::try_parse_from(["autograder-setup", "init"]).expect("parse ok");
+        match cli.command {
+            Command::Init(a) => {
+                assert_eq!(a.require_tests, 0, "default require-tests should be 0");
+            }
+            _ => panic!("expected init"),
+        }
+    }
+
+    #[test]
+    fn parse_init_require_tests_with_no_value_is_one() {
+        // Requires: #[arg(default_missing_value = "1", num_args(0..=1))]
+        let cli =
+            Cli::try_parse_from(["autograder-setup", "init", "--require-tests"]).expect("parse ok");
+        match cli.command {
+            Command::Init(a) => {
+                assert_eq!(
+                    a.require_tests, 1,
+                    "--require-tests (no value) should default to 1"
+                );
+            }
+            _ => panic!("expected init"),
+        }
+    }
+
+    #[test]
+    fn parse_init_require_tests_with_explicit_value() {
+        let cli = Cli::try_parse_from(["autograder-setup", "init", "--require-tests", "5"])
+            .expect("parse ok");
+
+        match cli.command {
+            Command::Init(a) => {
+                assert_eq!(a.require_tests, 5);
+            }
+            _ => panic!("expected init"),
+        }
+    }
+
+    #[test]
+    fn parse_init_all_related_flags_together() {
+        let cli = Cli::try_parse_from([
+            "autograder-setup",
+            "init",
+            "--root",
+            "proj",
+            "--tests-dir",
+            "t",
+            "--default-points",
+            "3",
+            "--no-style-check",
+            "--no-commit-count",
+            "--num-commit-checks",
+            "7",
+            "--require-tests",
+            "2",
+        ])
+        .expect("parse ok");
+
+        match cli.command {
+            Command::Init(a) => {
+                assert_eq!(a.root, PathBuf::from("proj"));
+                assert_eq!(a.tests_dir, PathBuf::from("t"));
+                assert_eq!(a.default_points, 3);
+                assert!(a.no_style_check);
+                assert!(a.no_commit_count);
+                assert_eq!(a.num_commit_checks, 7);
+                assert_eq!(a.require_tests, 2);
+            }
+            _ => panic!("expected init"),
+        }
+    }
+
+    #[test]
+    fn parse_table_flags() {
+        // Sanity check other subcommand flags
+        let cli = Cli::try_parse_from([
+            "autograder-setup",
+            "table",
+            "--root",
+            "proj",
+            "--no-clipboard",
+            "--to-readme",
+        ])
+        .expect("parse ok");
+
+        match cli.command {
+            Command::Table(a) => {
+                assert_eq!(a.root, PathBuf::from("proj"));
+                assert!(a.no_clipboard);
+                assert!(a.to_readme);
+            }
+            _ => panic!("expected table"),
+        }
     }
 }

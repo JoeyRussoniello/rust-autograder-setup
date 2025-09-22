@@ -14,6 +14,14 @@ fn extract_test_names(src: &str) -> Vec<String> {
         .collect()
 }
 
+/// Helper function to extract TEST_COUNT test cases
+fn test_count_steps(items: &[AutoTest]) -> Vec<&AutoTest> {
+    items
+        .iter()
+        .filter(|t| t.name.starts_with("TEST_COUNT"))
+        .collect()
+}
+
 fn sorted(names: Vec<String>) -> Vec<String> {
     let mut v = names.clone();
     v.sort();
@@ -529,4 +537,205 @@ fn manifest_path_absolute_is_preserved() {
     let paths = TestWithManifest::get_distinct_manifest_paths(&tests, &root);
     // Should contain the absolute path as a unix-style string
     assert!(paths.contains("/other/path/Cargo.toml"));
+}
+
+#[test]
+fn test_count_member_uses_member_manifest_path_in_name() {
+    let dir = tempdir().unwrap();
+
+    // Minimal member crate
+    fs::create_dir_all(dir.path().join("member/src")).unwrap();
+    fs::write(
+        dir.path().join("Cargo.toml"),
+        "[workspace]\nmembers=[\"member\"]\n",
+    )
+    .unwrap();
+    fs::write(
+        dir.path().join("member/Cargo.toml"),
+        "[package]\nname=\"member\"\nversion=\"0.1.0\"\n",
+    )
+    .unwrap();
+    fs::write(dir.path().join("member/src/lib.rs"), "#[test] fn m() {}").unwrap();
+
+    super::run(
+        dir.path(),
+        dir.path(),
+        1,
+        false,
+        false,
+        1,
+        1, // require at least 1 test
+    )
+    .unwrap();
+
+    let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
+    let member = test_count_steps(&items)
+        .into_iter()
+        .find(|s| s.manifest_path.as_deref() == Some("member/Cargo.toml"))
+        .expect("missing member TEST_COUNT");
+
+    // Current implementation uppercases the *full manifest path* in the name:
+    assert!(
+        member.name.contains("MEMBER/CARGO.TOML"),
+        "expected member TEST_COUNT name to contain uppercased manifest path; got {}",
+        member.name
+    );
+}
+
+#[test]
+fn creates_single_test_count_step_for_root_when_required() {
+    let dir = tempdir().unwrap();
+
+    // Root crate
+    fs::create_dir_all(dir.path().join("src")).unwrap();
+    fs::write(
+        dir.path().join("Cargo.toml"),
+        "[package]\nname=\"root\"\nversion=\"0.1.0\"\n",
+    )
+    .unwrap();
+    fs::write(dir.path().join("src/lib.rs"), "#[test] fn a() {}").unwrap();
+
+    // Scan the whole root so we see the root manifest
+    super::run(
+        dir.path(),
+        dir.path(), // tests_dir_name
+        1,          // default points
+        false,      // style_check
+        false,      // commit_counts
+        1,          // num_commit_checks (ignored because commit_counts=false)
+        3,          // require_tests => create TEST_COUNT steps
+    )
+    .unwrap();
+
+    let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
+    let steps = test_count_steps(&items);
+    assert_eq!(
+        steps.len(),
+        1,
+        "expected exactly one TEST_COUNT step for root"
+    );
+
+    let s = steps[0];
+    assert_eq!(s.name, "TEST_COUNT");
+    assert_eq!(s.min_tests, Some(3));
+    assert!(
+        s.manifest_path.is_none(),
+        "root TEST_COUNT should not store manifest_path"
+    );
+    assert_eq!(s.docstring, "Submission has at least 3 tests");
+}
+
+#[test]
+fn creates_test_count_steps_for_each_manifest_in_workspace() {
+    let dir = tempdir().unwrap();
+
+    // Root workspace with a member crate `member/`
+    fs::write(
+        dir.path().join("Cargo.toml"),
+        r#"[workspace]
+members = ["member"]
+"#,
+    )
+    .unwrap();
+
+    // Root crate has tests
+    fs::create_dir_all(dir.path().join("src")).unwrap();
+    fs::write(dir.path().join("src/lib.rs"), "#[test] fn root_test() {}").unwrap();
+
+    // Member crate with its own tests
+    fs::create_dir_all(dir.path().join("member/src")).unwrap();
+    fs::write(
+        dir.path().join("member/Cargo.toml"),
+        r#"[package]
+name = "member"
+version = "0.1.0"
+"#,
+    )
+    .unwrap();
+    fs::write(
+        dir.path().join("member/src/lib.rs"),
+        "#[test] fn member_test() {}",
+    )
+    .unwrap();
+
+    // Scan the whole root so we see *both* manifests
+    super::run(
+        dir.path(),
+        dir.path(), // tests_dir_name
+        2,          // default points (arbitrary)
+        true,       // style_check (unrelated here)
+        false,      // commit_counts
+        3,          // num_commit_checks (ignored)
+        5,          // require_tests => generate TEST_COUNT for each manifest path
+    )
+    .unwrap();
+
+    let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
+    let steps = test_count_steps(&items);
+
+    // Expect two TEST_COUNT steps: one for root, one for member
+    assert_eq!(
+        steps.len(),
+        2,
+        "expected TEST_COUNT for both root and member"
+    );
+
+    // Root
+    let root = steps
+        .iter()
+        .find(|s| s.manifest_path.is_none())
+        .expect("missing root TEST_COUNT");
+    assert_eq!(root.name, "TEST_COUNT");
+    assert_eq!(root.points, 2);
+    assert_eq!(root.min_tests, Some(5));
+    assert_eq!(root.docstring, "Submission has at least 5 tests");
+
+    // Member (note the uppercased full manifest path in the name per your implementation)
+    let member = steps
+        .iter()
+        .find(|s| s.manifest_path.as_deref() == Some("member/Cargo.toml"))
+        .expect("missing member TEST_COUNT");
+
+    assert!(
+        member.name.starts_with("TEST_COUNT_"),
+        "member TEST_COUNT should be prefixed with TEST_COUNT_"
+    );
+    assert!(
+        member.name.contains("MEMBER/CARGO.TOML"),
+        "member TEST_COUNT name should include uppercased manifest path; got {}",
+        member.name
+    );
+    assert_eq!(member.points, 2);
+    assert_eq!(member.min_tests, Some(5));
+    assert_eq!(member.docstring, "member submission has at least 5 tests");
+}
+
+#[test]
+fn does_not_create_test_count_steps_when_disabled() {
+    let dir = tempdir().unwrap();
+
+    fs::create_dir_all(dir.path().join("src")).unwrap();
+    fs::write(
+        dir.path().join("Cargo.toml"),
+        "[package]\nname=\"root\"\nversion=\"0.1.0\"\n",
+    )
+    .unwrap();
+    fs::write(dir.path().join("src/lib.rs"), "#[test] fn a() {}").unwrap();
+
+    super::run(
+        dir.path(),
+        dir.path(), // tests_dir_name
+        1,
+        false, // style_check
+        true,  // commit_counts (unrelated)
+        2,     // num_commit_checks (creates commit steps, but not test-count steps)
+        0,     // require_tests disabled
+    )
+    .unwrap();
+
+    let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
+    assert!(
+        test_count_steps(&items).is_empty(),
+        "no TEST_COUNT steps should be present when require_tests == 0"
+    );
 }
