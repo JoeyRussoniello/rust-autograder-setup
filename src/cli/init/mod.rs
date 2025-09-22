@@ -1,12 +1,12 @@
 use anyhow::{Context, Result};
 use std::{fs, io::Write, path::Path};
-use std::collections::HashSet;
 use crate::types::AutoTest;
 use crate::utils::{collect_rs_files_with_manifest, ensure_exists, get_tests_dir};
 
 use scan::{TestWithManifest, find_all_tests};
-
+use functions::{clippy_autotests, commit_count_autotests, test_count_autotests};
 mod scan;
+mod functions;
 #[cfg(test)]
 mod tests;
 
@@ -69,87 +69,4 @@ pub fn run(
 
     println!("Wrote {}", out_path.to_string_lossy());
     Ok(())
-}
-
-/// ! Consumes manifest_paths. Can be reworked if manifest paths are needed for something else
-fn clippy_autotests(
-    manifest_paths: &HashSet<String>,
-    points: u32,
-) -> Vec<AutoTest> {
-    manifest_paths
-        .iter()
-        .map(|mp| clippy_autotest_for(mp, points))
-        .collect()
-}
-
-fn clippy_autotest_for(manifest_path: &str, points: u32) -> AutoTest {
-    let dir = manifest_dir_label(manifest_path); // "." | "Cargo.toml" | "member"
-
-    let name: String;
-    let doc: String;
-    let manifest_path_opt: Option<String>;
-
-    if matches!(dir.as_str(), "." | "Cargo.toml") {
-        name = "CLIPPY_STYLE_CHECK".to_string();
-        doc = "`cargo clippy` style check".to_string();
-        manifest_path_opt = None;
-    } else {
-        name = format!("CLIPPY_STYLE_CHECK_{}", dir);
-        doc = format!("`cargo clippy style check for `{}`", dir);
-        manifest_path_opt = Some(manifest_path.to_string());
-    }
-
-    AutoTest {
-        name,
-        timeout: 10,
-        points,
-        docstring: doc,
-        // NOTE: your README calls this field `num_commits`; consider renaming for consistency.
-        min_commits: None,
-        manifest_path: manifest_path_opt,
-    }
-}
-
-fn commit_count_autotests(n: u32, points: u32) -> Vec<AutoTest> {
-    (1..=n)
-        .map(|i| AutoTest {
-            name: format!("COMMIT_COUNT_{}", i),
-            timeout: 10,
-            points,
-            // `table` replaces the "##" later—leave as-is.
-            docstring: "Ensures at least ## commits.".to_string(),
-            min_commits: Some(i),
-            manifest_path: None,
-        })
-        .collect()
-}
-
-/// Count test cases per manifest path
-fn test_count_autotests(manifest_paths: &HashSet<String>, points:u32, required_tests: u32) -> Vec<AutoTest>{
-    manifest_paths
-        .iter()
-        .map(|mp| test_count_autotest_for(mp, points, required_tests))
-        .collect()
-}
-fn test_count_autotest_for(manifest_path: &str, points: u32, required_tests: u32) -> AutoTest {
-    AutoTest{
-        name: format!("TEST_COUNT"),
-        timeout: 10,
-        points,
-        docstring: format!("{} submission has at least {} tests", manifest_path, required_tests),
-        min_commits: Some(required_tests),
-        manifest_path: Some(manifest_path.to_string()),
-    }
-}
-
-/// Turn ".../Cargo.toml" into "member" or "." for workspace root.
-fn manifest_dir_label(path: &str) -> String {
-    if path == "Cargo.toml" {
-        return ".".into();
-    }
-    std::path::Path::new(path)
-        .parent()
-        .and_then(|p| p.file_name())
-        .map(|s| s.to_string_lossy().into_owned())
-        .unwrap_or_else(|| ".".into())
 }
