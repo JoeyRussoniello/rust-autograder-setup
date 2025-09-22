@@ -34,6 +34,7 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
             docstring: "".into(),
             min_commits: None,
             manifest_path: None,
+            min_tests: None,
         },
         AutoTest {
             name: "CLIPPY_STYLE_CHECK".into(),
@@ -42,6 +43,7 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
             docstring: "".into(),
             min_commits: None,
             manifest_path: None,
+            min_tests: None,
         },
         AutoTest {
             name: "tokio_async_test".into(),
@@ -50,6 +52,7 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
             docstring: "".into(),
             min_commits: None,
             manifest_path: None,
+            min_tests: None,
         },
     ];
     write_autograder_json(root, &tests)?;
@@ -102,6 +105,7 @@ fn compile_includes_clippy_command_when_points_positive() {
         docstring: "".into(),
         min_commits: None,
         manifest_path: None,
+        min_tests: None,
     }]);
     let out = ya.compile().expect("Unable to compile YAML");
 
@@ -190,6 +194,7 @@ fn run_includes_manifest_path_when_present() -> anyhow::Result<()> {
             docstring: "".into(),
             min_commits: None,
             manifest_path: Some("questions/q1/Cargo.toml".into()),
+            min_tests: None,
         },
         AutoTest {
             name: "root_case".into(),
@@ -198,6 +203,7 @@ fn run_includes_manifest_path_when_present() -> anyhow::Result<()> {
             docstring: "".into(),
             min_commits: None,
             manifest_path: None,
+            min_tests: None,
         },
     ];
     write_autograder_json(root, &tests)?;

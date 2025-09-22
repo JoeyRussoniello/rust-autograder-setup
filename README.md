@@ -151,6 +151,8 @@ Options:
           Disable Commit Counting (enabled by default)
       --num-commit-checks <NUM_COMMIT_CHECKS>
           Number of commit count checks (default: 1) [default: 1]
+      --require-tests [<REQUIRE_TESTS>]
+          Require a minimum number of tests (default: 0, set to 1 if flag is passed without a value) [default: 0]
   -h, --help
           Print help
 ```
@@ -173,6 +175,12 @@ autograder-setup init --no-commit-count
 
 # Create multiple commit check steps for awarding partial credit
 autograder-setup init --num-commit-checks 3
+
+# Require at least 5 tests in the project
+autograder-setup init --require-tests 5
+
+# Require at least 1 test (shortcut: omit value)
+autograder-setup init --require-tests
 ```
 
 >Note: When commit counting is enabled, the generator creates separate checks for each threshold up to num-commit-checks.
@@ -189,25 +197,51 @@ autograder-setup init --num-commit-checks 3
 
 Schema:
 
-| Field   | Type   | Required | Description                                  |
-| ------- | ------ | -------- | -------------------------------------------- |
-| name    | string | yes      | Display name in the workflow and test filter |
-| timeout | number | yes      | Seconds for the autograder step (default 10) |
-| points  | number | yes      | Max score for this test (default 1)          |
-| docstring| string| yes      | The docstring pulled from the test case      |
-| num_commits | number | no | The number of commits required to earn points for a `COMMIT_COUNT` step |
-| manifest_path | string | no | The manifest path of the test's rust project `Cargo.toml` file |
+| Field           | Type   | Required | Description                                                                               |
+| --------------- | ------ | -------- | ----------------------------------------------------------------------------------------- |
+| `name`          | string | yes      | Display name in the workflow and test filter                                              |
+| `timeout`       | number | yes      | Seconds for the autograder step (default 10)                                              |
+| `points`        | number | yes      | Max score for this test (default 1)                                                       |
+| `docstring`     | string | yes      | The docstring pulled from the test case                                                   |
+| `min_commits`   | number | no       | Minimum number of commits required for a `COMMIT_COUNT` step (only present if applicable) |
+| `min_tests`     | number | no       | Minimum number of tests required for a `TEST_COUNT` step (only present if applicable)     |
+| `manifest_path` | string | no       | Path to the Rust project’s `Cargo.toml` for the test’s crate (only present if applicable) |
 
 Example:
 
 ```json
 [
-  { "name": "test_func_1", "timeout": 10, "points": 1, "docstring": "a test function", "num_commits": null, "manifest_path": "Cargo.toml"},
-  { "name": "COMMIT_COUNT_0", "timeout": 10, "points": 1, "docstring": "Ensures at least ## commits.", "num_commits": 5, "manifest_path": null}
-] 
+  {
+    "name": "test_func_1",
+    "timeout": 10,
+    "points": 1,
+    "docstring": "a test function",
+    "manifest_path": "Cargo.toml"
+  },
+  {
+    "name": "COMMIT_COUNT_0",
+    "timeout": 10,
+    "points": 1,
+    "docstring": "Ensures at least ## commits.",
+    "min_commits": 5
+  },
+  {
+    "name": "TEST_COUNT",
+    "timeout": 10,
+    "points": 1,
+    "docstring": "Ensures at least ## tests exist.",
+    "min_tests": 3
+  }
+]
+
 ```
 
-> Note: The `##` characters in `COMMIT_COUNT` steps can be left as-is, and will be replaced on `autograder-setup table` runs
+> Note: The `##` characters in `COMMIT_COUNT` and `TEST_COUNT` steps can be left as-is, and will be replaced on `autograder-setup table` runs
+
+> Note: For `TEST_COUNT` checks. The autograder will look for `min_tests` plus the amount of `cargo test` statemenets are left in the `.autograder.json` file
+> when running `autograder-setup build`
+>
+> Ex: I released a homework with **5** autograder test cases and want the students to add **3** test cases. The autograder will ensure **8** test cases to receive a point
 ---
 
 #### `build`
@@ -240,7 +274,7 @@ Name/ID rules:
 - **Step name** / `test-name`: uses name verbatim for all `cargo test` functions, and all caps names for other autograder steps (ex: `COMMIT_COUNTS`).
 - **Step id**: slugified `name` (lowercase; spaces/non-alnum → `-`; collapsed).
 - **Command**: `cargo test <name>` (uses name verbatim).
-  - In future update, will use the `--exact` flag, but for now, this behavior is unsupported **so NO tests should share a name/prefix**
+  - In future update, the CLI will use the `--exact` flag, but for now, this behavior is unsupported **so NO tests should share a name/prefix**
 
 Example:
 

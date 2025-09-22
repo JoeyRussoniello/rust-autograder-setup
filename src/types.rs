@@ -1,4 +1,4 @@
-use crate::utils::replace_commit_count_docstring;
+use crate::utils::replace_double_hashtag;
 use markdown_tables::MarkdownTableRow;
 use serde::{Deserialize, Serialize};
 
@@ -10,10 +10,14 @@ pub struct AutoTest {
     pub points: u32,
 
     // Only used when name maps to COMMIT_COUNT
-    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub min_commits: Option<u32>,
 
-    #[serde(default)]
+    // Only used when name maps to TEST_COUNT
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub min_tests: Option<u32>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub manifest_path: Option<String>,
 }
 impl MarkdownTableRow for AutoTest {
@@ -23,7 +27,7 @@ impl MarkdownTableRow for AutoTest {
 
     fn column_values(&self) -> Vec<String> {
         let doc = if let Some(min_commits) = self.min_commits {
-            replace_commit_count_docstring(self.docstring.clone(), min_commits)
+            replace_double_hashtag(self.docstring.clone(), min_commits)
         } else {
             self.docstring.clone()
         };
@@ -43,6 +47,10 @@ pub enum StepCmd {
         manifest_path: Option<String>,
     },
     CommitCount {
+        min: u32,
+    },
+    TestCount {
+        manifest_path: Option<String>,
         min: u32,
     },
 }
@@ -69,6 +77,19 @@ impl StepCmd {
                 // ! Builder will ovewrite with the path to the shell script on disk.
                 String::new()
             }
+            // Populate a shell script for a specific manifest path, or leave blank
+            StepCmd::TestCount { min, manifest_path } => match manifest_path {
+                Some(p) if !p.is_empty() && p != "Cargo.toml" => {
+                    format!(
+                        r#"cargo test --manifest-path {} -- --list | tail -1 | awk '{{print $1}}' | awk '{{if ($1 < {}+##) {{print "Too few tests ("$1-##") expected {}"; exit 1}}}}'"#,
+                        p, min, min
+                    )
+                }
+                _ => format!(
+                    r#"cargo test -- --list | tail -1 | awk '{{print $1}}' | awk '{{if ($1 < {}+##) {{print "Too few tests ("$1-##") expected {}"; exit 1}}}}'"#,
+                    min, min
+                ),
+            },
         }
     }
 }
