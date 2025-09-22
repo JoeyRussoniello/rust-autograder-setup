@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use std::{fs, io::Write, path::Path};
-
+use std::collections::HashSet;
 use crate::types::AutoTest;
 use crate::utils::{collect_rs_files_with_manifest, ensure_exists, get_tests_dir};
 
@@ -51,11 +51,15 @@ pub fn run(
 
     if style_check {
         //Create autotests for each distinct manifest path we found
-        items.extend(clippy_autotests(manifest_paths, num_points));
+        items.extend(clippy_autotests(&manifest_paths, num_points));
     }
 
     if commit_counts {
         items.extend(commit_count_autotests(num_commit_checks, num_points));
+    }
+
+    if require_tests > 0 {
+        items.extend(test_count_autotests(&manifest_paths, num_points, require_tests));
     }
 
     let json = serde_json::to_string_pretty(&items)?;
@@ -69,7 +73,7 @@ pub fn run(
 
 /// ! Consumes manifest_paths. Can be reworked if manifest paths are needed for something else
 fn clippy_autotests(
-    manifest_paths: std::collections::HashSet<String>,
+    manifest_paths: &HashSet<String>,
     points: u32,
 ) -> Vec<AutoTest> {
     manifest_paths
@@ -120,15 +124,21 @@ fn commit_count_autotests(n: u32, points: u32) -> Vec<AutoTest> {
         .collect()
 }
 
-///! To Really implement, must allow multiple test count autotests, and MUST have manifest-path logic
-fn test_count_autotests(required_tests: u32, points: u32) -> AutoTest {
+/// Count test cases per manifest path
+fn test_count_autotests(manifest_paths: &HashSet<String>, points:u32, required_tests: u32) -> Vec<AutoTest>{
+    manifest_paths
+        .iter()
+        .map(|mp| test_count_autotest_for(mp, points, required_tests))
+        .collect()
+}
+fn test_count_autotest_for(manifest_path: &str, points: u32, required_tests: u32) -> AutoTest {
     AutoTest{
         name: format!("TEST_COUNT"),
         timeout: 10,
         points,
-        docstring: format!("Submission has at least {} tests", required_tests),
+        docstring: format!("{} submission has at least {} tests", manifest_path, required_tests),
         min_commits: Some(required_tests),
-        manifest_path: None,
+        manifest_path: Some(manifest_path.to_string()),
     }
 }
 
