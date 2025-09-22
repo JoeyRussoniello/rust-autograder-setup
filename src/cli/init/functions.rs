@@ -64,26 +64,29 @@ pub fn test_count_autotests(
         .collect()
 }
 fn test_count_autotest_for(manifest_path: &str, points: u32, required_tests: u32) -> AutoTest {
-    let stripped_path = manifest_path
-        .strip_suffix("/Cargo.toml")
-        .unwrap_or(manifest_path);
+    let dir = manifest_dir_label(manifest_path);
 
-    let docstring = if stripped_path == "." || stripped_path == "Cargo.toml" {
-        format!("Submission has at least {} tests", required_tests)
+    let name: String;
+    let docstring: String;
+    let manifest_path_opt: Option<String>;
+
+    if matches!(dir.as_str(), "." | "Cargo.toml") {
+        docstring = format!("Submission has at least {} tests", required_tests);
+        manifest_path_opt = None;
+        name = "TEST_COUNT".to_string();
     } else {
-        format!(
-            "{} submission has at least {} tests",
-            stripped_path, required_tests
-        )
-    };
+        docstring = format!("{} submission has at least {} tests", dir, required_tests);
+        manifest_path_opt = Some(manifest_path.to_string());
+        name = format!("TEST_COUNT_{}", manifest_path.to_uppercase());
+    }
 
     AutoTest {
-        name: format!("TEST_COUNT_{}", manifest_path.to_uppercase()),
+        name,
         timeout: 10,
         points,
         docstring,
         min_commits: Some(required_tests),
-        manifest_path: Some(manifest_path.to_string()),
+        manifest_path: manifest_path_opt,
     }
 }
 

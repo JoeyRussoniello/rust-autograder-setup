@@ -46,6 +46,7 @@ pub enum StepCmd {
         min: u32,
     },
     TestCount {
+        manifest_path: Option<String>,
         min: u32,
     },
 }
@@ -72,12 +73,19 @@ impl StepCmd {
                 // ! Builder will ovewrite with the path to the shell script on disk.
                 String::new()
             }
-            StepCmd::TestCount { min } => {
-                format!(
-                    r#"cargo test -- --list | tail -1 | awk '{{print $1}}' | awk '{{if ($1 < {}+N) {{print "Too few tests ("$1-N") expected {}"; exit 1}}}}'"#,
+            // Populate a shell script for a specific manifest path, or leave blank
+            StepCmd::TestCount { min, manifest_path } => match manifest_path {
+                Some(p) if !p.is_empty() && p != "Cargo.toml" => {
+                    format!(
+                        r#"cargo test --manifest-path {} -- --list | tail -1 | awk '{{print $1}}' | awk '{{if ($1 < {}+##) {{print "Too few tests ("$1-##") expected {}"; exit 1}}}}'"#,
+                        p, min, min
+                    )
+                }
+                _ => format!(
+                    r#"cargo test -- --list | tail -1 | awk '{{print $1}}' | awk '{{if ($1 < {}+##) {{print "Too few tests ("$1-##") expected {}"; exit 1}}}}'"#,
                     min, min
-                )
-            }
+                ),
+            },
         }
     }
 }
