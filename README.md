@@ -251,7 +251,12 @@ Generates `.github/workflows/classroom.yaml` from `.autograder/autograder.json`,
 Options:
 
 ```bash
--r, --root <path>        Project root (default: .)
+-r, --root <ROOT>
+        Root of the Rust project (defaults to current directory) [default: .]
+    --grade-on-push
+        Have autograder run on push to any branch (default: grade only on "Grade All" or `repository_dispatch`)
+-h, --help
+        Print help
 ```
 
 Examples:
@@ -259,6 +264,10 @@ Examples:
 ```bash
 autograder-setup build
 autograder-setup build --root ../student-assignment
+
+# Setup the autograder to run every time the students pushes to their repo
+# (Ideal for small class sizes)
+autograder-setup build --grade-on-push
 ```
 
 ##### YAML Output
@@ -276,7 +285,22 @@ Name/ID rules:
 - **Command**: `cargo test <name>` (uses name verbatim).
   - In future update, the CLI will use the `--exact` flag, but for now, this behavior is unsupported **so NO tests should share a name/prefix**
 
-Example:
+Workflow triggers (`on:`):
+
+By default the generated workflow uses:
+
+- `on: [repository_dispatch]` — this lets instructors trigger grading from the classroom UI or a manual dispatch without running on every push.
+
+If you run autograder-setup build `--grade-on-push`, the preamble will include:
+
+- `on: [repository_dispatch, push]` — the workflow will also run on every push to the repository (all branches).
+
+Notes about choosing triggers:
+
+- `repository_dispatch` is the safe default for instructor-initiated grading (avoid running CI for every student push and balooning compute costs)
+- `--grade-on-push` is convenient for immediate feedback during development but may increase CI usage and spurious runs; consider branch/paths filters if you want to limit when pushes trigger the autograder.
+
+Example Output:
 
 ```yaml
 name: Autograding Tests
