@@ -1,7 +1,7 @@
+use crate::utils::get_commit_count_file_name_from_str;
 use crate::utils::replace_double_hashtag;
 use markdown_tables::MarkdownTableRow;
 use serde::{Deserialize, Serialize};
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AutoTest {
     pub name: String,
@@ -47,6 +47,7 @@ pub enum StepCmd {
         manifest_path: Option<String>,
     },
     CommitCount {
+        name: String,
         min: u32,
     },
     TestCount {
@@ -73,9 +74,11 @@ impl StepCmd {
                 }
                 _ => "cargo clippy -- -D warnings".to_string(),
             },
-            StepCmd::CommitCount { .. } => {
-                // ! Builder will ovewrite with the path to the shell script on disk.
-                String::new()
+            StepCmd::CommitCount { name, .. } => {
+                format!(
+                    "bash ./.autograder/{}",
+                    get_commit_count_file_name_from_str(name)
+                )
             }
             // Populate a shell script for a specific manifest path, or leave blank
             StepCmd::TestCount { min, manifest_path } => match manifest_path {

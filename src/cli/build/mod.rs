@@ -3,12 +3,15 @@ use std::path::{Path, PathBuf};
 
 use crate::types::{AutoTest, StepCmd};
 use crate::utils::{
-    YAML_INDENT, YAML_PREAMBLE, read_autograder_config, replace_double_hashtag, slug_id, yaml_quote,
+    YAML_INDENT, get_commit_count_file_name_from_str, read_autograder_config,
+    replace_double_hashtag, slug_id, yaml_quote,
 };
 use std::collections::HashMap;
 use std::fs::{File, create_dir_all};
 
-pub fn run(root: &Path) -> Result<()> {
+mod build_functions;
+
+pub fn run(root: &Path, grade_on_push: bool) -> Result<()> {
     let tests = read_autograder_config(root)?;
 
     let workflows_dir = root.join(".github").join("workflows");
@@ -19,7 +22,7 @@ pub fn run(root: &Path) -> Result<()> {
     let workflow_path = workflows_dir.join("classroom.yml");
 
     let mut yaml_compiler = YAMLAutograder::new(root.to_path_buf());
-    yaml_compiler.set_preamble(YAML_PREAMBLE.to_string());
+    yaml_compiler.set_preamble(build_functions::get_yaml_preamble(grade_on_push));
     yaml_compiler.set_tests(tests);
     let workflow_content = yaml_compiler.compile();
 
@@ -48,7 +51,6 @@ pub struct YAMLAutograder {
     pub autograder_content: String,
     tests: Vec<AutoTest>,
     ids: Vec<String>,
-    added_checkout: bool,
     root: PathBuf,
 }
 impl YAMLAutograder {
@@ -58,7 +60,6 @@ impl YAMLAutograder {
             autograder_content: String::new(),
             tests: Vec::new(),
             ids: Vec::new(),
-            added_checkout: false,
             root,
         }
     }
@@ -130,11 +131,7 @@ impl YAMLAutograder {
         for test in tests.iter() {
             let step = infer_step_cmd(test);
 
-            match step {
-                StepCmd::CommitCount { min } => {
-                    write_commit_count_shell(&self.root, min, &get_commit_count_file_name(test))?;
-                    self.compile_commit_count(test);
-                }
+            match &step {
                 StepCmd::TestCount { .. } => {
                     let base_command = step.command();
                     let mp = &test.manifest_path;
@@ -145,37 +142,21 @@ impl YAMLAutograder {
                         &replace_double_hashtag(base_command, *num_cargo_tests),
                     )
                 }
+                StepCmd::CommitCount { min, name } => {
+                    write_commit_count_shell(
+                        &self.root,
+                        *min,
+                        &get_commit_count_file_name_from_str(name),
+                    )?;
+
+                    self.compile_test_step(test, &step.command());
+                }
                 _ => self.compile_test_step(test, &step.command()),
             }
             self.autograder_content.push('\n');
         }
 
         Ok(())
-    }
-
-    fn compile_commit_count(&mut self, test: &AutoTest) {
-        if !self.added_checkout {
-            self.add_checkout_step()
-        };
-
-        // Root agnostic, since we want relative pathing
-        self.compile_test_step(
-            test,
-            &format!("bash ./.autograder/{}", get_commit_count_file_name(test)),
-        );
-    }
-
-    /// Add the repository checkout step for commit counting
-    fn add_checkout_step(&mut self) {
-        if self.added_checkout {
-            return;
-        }
-
-        let indent_level = 3;
-        self.insert_autograder_string("- name: Checkout Code".into(), indent_level);
-        self.insert_autograder_string("uses: actions/checkout@v4\nwith:".into(), indent_level + 1);
-        self.insert_autograder_string("fetch-depth: 0".into(), indent_level + 2);
-        self.added_checkout = true;
     }
 
     fn compile_test_reporter(&mut self) {
@@ -229,6 +210,7 @@ fn infer_step_cmd(test: &AutoTest) -> StepCmd {
     if n.starts_with("COMMIT_COUNT") {
         // Priority: explicit field > number in name > default
         return StepCmd::CommitCount {
+            name: n.to_string(),
             min: test.min_commits.unwrap(),
         };
     }
@@ -247,9 +229,6 @@ fn infer_step_cmd(test: &AutoTest) -> StepCmd {
     }
 }
 
-fn get_commit_count_file_name(test: &AutoTest) -> String {
-    format!("{}.sh", test.name.to_lowercase())
-}
 fn write_commit_count_shell(root: &Path, num_commits: u32, name: &str) -> Result<()> {
     let script_path = root.join(".autograder").join(name);
     // Shell script content
