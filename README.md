@@ -117,7 +117,7 @@ autograder-setup --help
 autograder-setup init
 
 # OR scan tests/  for tests if the assignment is a packages (uses lib.rs instead of main/mod.rs)
-autograder-setup --tests-dir tests
+autograder-setup init --tests-dir tests
 
 # 2) (Optional) Edit tests/autograder.json to adjust points/timeouts
 
@@ -443,4 +443,5 @@ autograder-setup reset
 
 - Additional CLI improvements and configuration options
 - Publish to `crates.io` for installation via `cargo install autograder-setup`
+
 
