@@ -4,6 +4,8 @@ use std::fs::{self, File};
 use std::io::Write;
 use tempfile::tempdir;
 
+use super::build_functions::get_yaml_preamble;
+
 // Small helper: write a JSON array of AutoTest to tests/autograder.json
 fn write_autograder_json(root: &Path, tests: &[AutoTest]) -> anyhow::Result<()> {
     let tests_dir = root.join(".autograder");
@@ -58,12 +60,12 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
     write_autograder_json(root, &tests)?;
 
     // Act
-    run(root)?; // should write .github/workflows/classroom.yml
+    run(root, true)?; // should write .github/workflows/classroom.yml
 
     // Assert
     let yaml = read_workflow(root)?;
     // 1) Preamble is at the top
-    assert!(yaml.starts_with(YAML_PREAMBLE));
+    assert!(yaml.starts_with(&get_yaml_preamble(true)));
 
     // 2) Steps for graded tests exist with quoted command
     assert!(yaml.contains(r#"- name: test_one"#));
@@ -209,12 +211,12 @@ fn run_includes_manifest_path_when_present() -> anyhow::Result<()> {
     write_autograder_json(root, &tests)?;
 
     // Act
-    run(root)?;
+    run(root, true)?;
 
     // Assert
     let yaml = read_workflow(root)?;
     // Has preamble
-    assert!(yaml.starts_with(YAML_PREAMBLE));
+    assert!(yaml.starts_with(&get_yaml_preamble(true)));
 
     // Test with manifest_path gets the flag inserted before `-- --exact`
     assert!(yaml.contains(r#"- name: unit_adds"#));

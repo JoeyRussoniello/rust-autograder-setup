@@ -1,4 +1,5 @@
-fn get_yaml_preamble(on_push: bool) -> String{
+/// Generates the YAML preamble for the GitHub Actions workflow file.
+pub fn get_yaml_preamble(on_push: bool) -> String {
     let mut triggers = vec!["repository_dispatch"];
 
     if on_push {
@@ -29,11 +30,8 @@ jobs:
           components: clippy,rustfmt
 
 "#,
-    triggers_joined
+        triggers_joined
     );
 
     preamble
 }
-
-
-

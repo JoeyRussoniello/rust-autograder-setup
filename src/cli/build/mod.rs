@@ -3,14 +3,14 @@ use std::path::{Path, PathBuf};
 
 use crate::types::{AutoTest, StepCmd};
 use crate::utils::{
-    YAML_INDENT, YAML_PREAMBLE, read_autograder_config, replace_double_hashtag, slug_id, yaml_quote,
+    YAML_INDENT, read_autograder_config, replace_double_hashtag, slug_id, yaml_quote,
 };
 use std::collections::HashMap;
 use std::fs::{File, create_dir_all};
 
 mod build_functions;
 
-pub fn run(root: &Path) -> Result<()> {
+pub fn run(root: &Path, grade_on_push: bool) -> Result<()> {
     let tests = read_autograder_config(root)?;
 
     let workflows_dir = root.join(".github").join("workflows");
@@ -21,7 +21,7 @@ pub fn run(root: &Path) -> Result<()> {
     let workflow_path = workflows_dir.join("classroom.yml");
 
     let mut yaml_compiler = YAMLAutograder::new(root.to_path_buf());
-    yaml_compiler.set_preamble(YAML_PREAMBLE.to_string());
+    yaml_compiler.set_preamble(build_functions::get_yaml_preamble(grade_on_push));
     yaml_compiler.set_tests(tests);
     let workflow_content = yaml_compiler.compile();
 
