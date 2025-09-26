@@ -467,6 +467,3 @@ autograder-setup reset
 
 - Additional CLI improvements and configuration options
 - Publish to `crates.io` for installation via `cargo install autograder-setup`
-
-
-
