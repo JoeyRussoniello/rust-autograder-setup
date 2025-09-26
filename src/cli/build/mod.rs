@@ -3,7 +3,8 @@ use std::path::{Path, PathBuf};
 
 use crate::types::{AutoTest, StepCmd};
 use crate::utils::{
-    YAML_INDENT, read_autograder_config, replace_double_hashtag, slug_id, yaml_quote,
+    YAML_INDENT, get_commit_count_file_name_from_str, read_autograder_config,
+    replace_double_hashtag, slug_id, yaml_quote,
 };
 use std::collections::HashMap;
 use std::fs::{File, create_dir_all};
@@ -130,14 +131,7 @@ impl YAMLAutograder {
         for test in tests.iter() {
             let step = infer_step_cmd(test);
 
-            match step {
-                StepCmd::CommitCount { min } => {
-                    write_commit_count_shell(&self.root, min, &get_commit_count_file_name(test))?;
-                    self.compile_test_step(
-                        test,
-                        &format!("bash ./.autograder/{}", get_commit_count_file_name(test)),
-                    );
-                }
+            match &step {
                 StepCmd::TestCount { .. } => {
                     let base_command = step.command();
                     let mp = &test.manifest_path;
@@ -147,6 +141,15 @@ impl YAMLAutograder {
                         test,
                         &replace_double_hashtag(base_command, *num_cargo_tests),
                     )
+                }
+                StepCmd::CommitCount { min, name } => {
+                    write_commit_count_shell(
+                        &self.root,
+                        *min,
+                        &get_commit_count_file_name_from_str(name),
+                    )?;
+
+                    self.compile_test_step(test, &step.command());
                 }
                 _ => self.compile_test_step(test, &step.command()),
             }
@@ -207,6 +210,7 @@ fn infer_step_cmd(test: &AutoTest) -> StepCmd {
     if n.starts_with("COMMIT_COUNT") {
         // Priority: explicit field > number in name > default
         return StepCmd::CommitCount {
+            name: n.to_string(),
             min: test.min_commits.unwrap(),
         };
     }
@@ -225,9 +229,6 @@ fn infer_step_cmd(test: &AutoTest) -> StepCmd {
     }
 }
 
-fn get_commit_count_file_name(test: &AutoTest) -> String {
-    format!("{}.sh", test.name.to_lowercase())
-}
 fn write_commit_count_shell(root: &Path, num_commits: u32, name: &str) -> Result<()> {
     let script_path = root.join(".autograder").join(name);
     // Shell script content
