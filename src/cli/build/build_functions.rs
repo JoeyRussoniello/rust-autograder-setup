@@ -22,7 +22,10 @@ jobs:
     if: github.actor != 'github-classroom[bot]'
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4"
+        uses: actions/checkout@v4
+        with:
+          # Checkout with fetch depth 0 to get a full git history for commit counting
+          fetch-depth: 0
     
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
