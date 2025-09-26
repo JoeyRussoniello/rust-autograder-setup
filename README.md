@@ -67,6 +67,11 @@ Keeps autograding setup **simple for instructors** while making grading criteria
 # 2) Extract and install:
 tar -xzf autograder-setup-vX.Y.Z-x86_64-apple-darwin.tar.gz
 sudo install -m 0755 autograder-setup-vX.Y.Z-x86_64-apple-darwin/autograder-setup /usr/local/bin/autograder-setup
+
+# 3) Remove the Quarantine Attribute to disable MacOS Gatekeeper and code signing requirement.
+sudo xattr -r -d com.apple.quarantine /usr/local/bin/autograder-setup
+
+# 4) Check that you can run it
 autograder-setup --version
 ```
 
@@ -438,3 +443,4 @@ autograder-setup reset
 
 - Additional CLI improvements and configuration options
 - Publish to `crates.io` for installation via `cargo install autograder-setup`
+
