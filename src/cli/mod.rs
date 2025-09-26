@@ -74,6 +74,10 @@ pub struct BuildArgs {
     /// Root of the Rust project (defaults to current directory)
     #[arg(short, long, default_value = ".")]
     pub root: PathBuf,
+
+    /// Have autograder run on push to any branch (default: grade only on "Grade All" or `repository_dispatch`)
+    #[arg(long = "grade-on-push", default_value_t = false)]
+    pub grade_on_push: bool,
 }
 
 #[derive(Args, Debug)]
@@ -119,7 +123,7 @@ pub fn run() -> Result<()> {
             )
         }
         // Build has no args; default to current dir root like init would.
-        Command::Build(a) => build::run(&a.root),
+        Command::Build(a) => build::run(&a.root, a.grade_on_push),
         Command::Table(a) => table::run(&a.root, !a.no_clipboard, a.to_readme),
         Command::Reset(a) => reset::run(&a.root),
     }
