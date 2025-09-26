@@ -50,7 +50,6 @@ pub struct YAMLAutograder {
     pub autograder_content: String,
     tests: Vec<AutoTest>,
     ids: Vec<String>,
-    added_checkout: bool,
     root: PathBuf,
 }
 impl YAMLAutograder {
@@ -60,7 +59,6 @@ impl YAMLAutograder {
             autograder_content: String::new(),
             tests: Vec::new(),
             ids: Vec::new(),
-            added_checkout: false,
             root,
         }
     }
@@ -135,7 +133,10 @@ impl YAMLAutograder {
             match step {
                 StepCmd::CommitCount { min } => {
                     write_commit_count_shell(&self.root, min, &get_commit_count_file_name(test))?;
-                    self.compile_commit_count(test);
+                    self.compile_test_step(
+                        test,
+                        &format!("bash ./.autograder/{}", get_commit_count_file_name(test)),
+                    );
                 }
                 StepCmd::TestCount { .. } => {
                     let base_command = step.command();
@@ -153,31 +154,6 @@ impl YAMLAutograder {
         }
 
         Ok(())
-    }
-
-    fn compile_commit_count(&mut self, test: &AutoTest) {
-        if !self.added_checkout {
-            self.add_checkout_step()
-        };
-
-        // Root agnostic, since we want relative pathing
-        self.compile_test_step(
-            test,
-            &format!("bash ./.autograder/{}", get_commit_count_file_name(test)),
-        );
-    }
-
-    /// Add the repository checkout step for commit counting
-    fn add_checkout_step(&mut self) {
-        if self.added_checkout {
-            return;
-        }
-
-        let indent_level = 3;
-        self.insert_autograder_string("- name: Checkout Code".into(), indent_level);
-        self.insert_autograder_string("uses: actions/checkout@v4\nwith:".into(), indent_level + 1);
-        self.insert_autograder_string("fetch-depth: 0".into(), indent_level + 2);
-        self.added_checkout = true;
     }
 
     fn compile_test_reporter(&mut self) {
