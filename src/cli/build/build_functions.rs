@@ -8,7 +8,7 @@ pub fn get_yaml_preamble(on_push: bool) -> String {
     let triggers_joined = triggers.join(", ");
 
     let preamble = format!(
-        r#"pub const YAML_PREAMBLE: &str = r#"name: Autograding Tests
+        r#"name: Autograding Tests
 on: [{}]
 
 permissions:
