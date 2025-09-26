@@ -8,6 +8,8 @@ use crate::utils::{
 use std::collections::HashMap;
 use std::fs::{File, create_dir_all};
 
+mod build_functions;
+
 pub fn run(root: &Path) -> Result<()> {
     let tests = read_autograder_config(root)?;
 

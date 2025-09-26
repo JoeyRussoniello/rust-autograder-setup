@@ -5,28 +5,6 @@ use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
 //pub static DEFAULT_POINTS: u32 = 1;
-pub const YAML_PREAMBLE: &str = r#"name: Autograding Tests
-on: [push, repository_dispatch]
-
-permissions:
-  checks: write
-  actions: read
-  contents: read
-
-jobs:
-  run-autograding-tests:
-    runs-on: ubuntu-latest
-    if: github.actor != 'github-classroom[bot]'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy,rustfmt
-
-"#;
 
 pub const YAML_INDENT: &str = "  ";
 
