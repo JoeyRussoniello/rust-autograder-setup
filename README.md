@@ -243,10 +243,10 @@ Example:
 
 > Note: The `##` characters in `COMMIT_COUNT` and `TEST_COUNT` steps can be left as-is, and will be replaced on `autograder-setup table` runs
 
-> Note: For `TEST_COUNT` checks. The autograder will look for `min_tests` plus the amount of `cargo test` statemenets are left in the `.autograder.json` file
+> Note: For `TEST_COUNT` checks. The autograder will look for `min_tests` plus the amount of `cargo test` statements that are present in the `.autograder.json` file
 > when running `autograder-setup build`
 >
-> Ex: I released a homework with **5** autograder test cases and want the students to add **3** test cases. The autograder will ensure **8** test cases to receive a point
+> Ex: For a homework with **5** autograder test cases, where we want the students to add **3** test cases the autograder will ensure **8** test cases to receive a point
 ---
 
 #### `build`
@@ -443,5 +443,6 @@ autograder-setup reset
 
 - Additional CLI improvements and configuration options
 - Publish to `crates.io` for installation via `cargo install autograder-setup`
+
 
 
