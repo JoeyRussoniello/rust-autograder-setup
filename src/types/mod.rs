@@ -18,7 +18,6 @@ pub struct TestMeta {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum TestKind {
     CargoTest {
-        function: String,
         #[serde(skip_serializing_if = "Option::is_none")]
         manifest_path: Option<String>,
     },
@@ -70,10 +69,9 @@ impl AutoTest {
 
     fn command(&self) -> String {
         match &self.kind {
-            TestKind::CargoTest {
-                function,
-                manifest_path,
-            } => cargo_test_cmd(function, manifest_path.as_deref()),
+            TestKind::CargoTest { manifest_path } => {
+                cargo_test_cmd(&self.meta.name, manifest_path.as_deref())
+            }
             TestKind::Clippy { manifest_path } => clippy_cmd(manifest_path.as_deref()),
             TestKind::CommitCount { .. } => commit_count_cmd(&self.meta.name),
             TestKind::TestCount {
