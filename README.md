@@ -200,45 +200,37 @@ autograder-setup init --require-tests
 
 ##### JSON Output
 
-Schema:
-
-| Field           | Type   | Required | Description                                                                               |
-| --------------- | ------ | -------- | ----------------------------------------------------------------------------------------- |
-| `name`          | string | yes      | Display name in the workflow and test filter                                              |
-| `timeout`       | number | yes      | Seconds for the autograder step (default 10)                                              |
-| `points`        | number | yes      | Max score for this test (default 1)                                                       |
-| `docstring`     | string | yes      | The docstring pulled from the test case                                                   |
-| `min_commits`   | number | no       | Minimum number of commits required for a `COMMIT_COUNT` step (only present if applicable) |
-| `min_tests`     | number | no       | Minimum number of tests required for a `TEST_COUNT` step (only present if applicable)     |
-| `manifest_path` | string | no       | Path to the Rust project’s `Cargo.toml` for the test’s crate (only present if applicable) |
+| Field                 | Type   | Req | Description                                                                 |
+| --------------------- | ------ | --- | --------------------------------------------------------------------------- |
+| `meta.name`           | string | yes | Display name in the workflow and test filter                                |
+| `meta.description`    | string | yes | Student-facing description (supports `##` placeholder for counts)           |
+| `meta.points`         | number | yes | Max score for this test (default 1)                                         |
+| `meta.timeout`        | number | yes | Seconds for the autograder step (default 10)                                |
+| `type`                | string | yes | One of: `cargo_test`, `clippy`, `commit_count`, `test_count`                |
+| `manifest_path`       | string | no  | Path to `Cargo.toml` (for `cargo_test`, `clippy`, `test_count`)             |
+| `min_commits`         | number | no  | Required commits (only for `commit_count`)                                  |
+| `min_tests`           | number | no  | Required tests (only for `test_count`)                                      |
 
 Example:
 
 ```json
 [
   {
-    "name": "test_func_1",
-    "timeout": 10,
-    "points": 1,
-    "docstring": "a test function",
+     "meta": { "name": "test_func_1", "description": "a test function", "points": 1, "timeout": 10 },
+     "type": "cargo_test",
     "manifest_path": "Cargo.toml"
   },
   {
-    "name": "COMMIT_COUNT_0",
-    "timeout": 10,
-    "points": 1,
-    "docstring": "Ensures at least ## commits.",
+    "meta": { "name": "COMMIT_COUNT_1", "description": "Ensure at least ## commits.", "points": 1, "timeout": 10 },
+    "type": "commit_count",
     "min_commits": 5
   },
   {
-    "name": "TEST_COUNT",
-    "timeout": 10,
-    "points": 1,
-    "docstring": "Ensures at least ## tests exist.",
+    "meta": { "name": "TEST_COUNT", "description": "Ensure at least ## tests exist.", "points": 1, "timeout": 10 },
+    "type": "test_count",
     "min_tests": 3
   }
 ]
-
 ```
 
 > Note: The `##` characters in `COMMIT_COUNT` and `TEST_COUNT` steps can be left as-is, and will be replaced on `autograder-setup table` runs
@@ -246,7 +238,7 @@ Example:
 > Note: For `TEST_COUNT` checks. The autograder will look for `min_tests` plus the amount of `cargo test` statements that are present in the `.autograder.json` file
 > when running `autograder-setup build`
 >
-> Ex: For a homework with **5** autograder test cases, where we want the students to add **3** test cases the autograder will ensure **8** test cases to receive a point
+> *Example*: For a homework with **5** autograder test cases, where we want the students to add **3** test cases the autograder will ensure **8** test cases to receive a point
 ---
 
 #### `build`
@@ -296,7 +288,7 @@ By default the generated workflow uses:
 
 - `on: [repository_dispatch]` — this lets instructors trigger grading from the classroom UI or a manual dispatch without running on every push.
 
-If you run autograder-setup build `--grade-on-push`, the preamble will include:
+Running `autograder-setup build --grade-on-push`, the trigger will change to :
 
 - `on: [repository_dispatch, push]` — the workflow will also run on every push to the repository (all branches).
 
