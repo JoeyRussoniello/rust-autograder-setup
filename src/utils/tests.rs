@@ -130,7 +130,7 @@ fn yaml_quote_wraps_in_double_quotes_and_escapes_internal_quotes() {
     assert_eq!(yaml_quote("plain"), "\"plain\"");
     assert_eq!(yaml_quote("he said \"hi\""), "\"he said \\\"hi\\\"\"");
     assert_eq!(yaml_quote("a:b"), "\"a:b\""); // just wrapped; no extra escaping
-    assert_eq!(yaml_quote("path\\with\\slashes"), "\"path\\with\\slashes\"");
+    assert_eq!(yaml_quote(r"path\with\slashes"), r#""path\\with\\slashes""#);
     // No escaping of backslashes/newlines by design (doc states simple quote)
     assert_eq!(yaml_quote("line1\nline2"), "\"line1\nline2\"");
 }

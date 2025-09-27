@@ -106,8 +106,8 @@ pub fn yaml_quote(s: &str) -> String {
     for ch in s.chars() {
         match ch {
             '\\' => out.push_str(r#"\\"#),
-            '"'  => out.push_str(r#"\""#),
-            _    => out.push(ch),
+            '"' => out.push_str(r#"\""#),
+            _ => out.push(ch),
         }
     }
     out.push('"');

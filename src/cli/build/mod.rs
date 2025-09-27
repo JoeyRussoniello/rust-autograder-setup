@@ -16,7 +16,6 @@ mod steps;
 
 pub fn run(root: &Path, grade_on_push: bool) -> Result<()> {
     let tests = read_autograder_config(root)?;
-    println!("Found {:#?}", tests);
     let workflows_dir = root.join(".github").join("workflows");
     create_dir_all(&workflows_dir)
         .with_context(|| format!("Failed to create {}", workflows_dir.to_string_lossy()))?;

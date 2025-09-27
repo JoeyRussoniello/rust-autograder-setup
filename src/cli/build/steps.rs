@@ -37,9 +37,21 @@ fn indent(s: &mut String, level: usize, line: impl AsRef<str>) {
 impl CommandStep {
     /// Append this step as YAML list item starting at `indent_level` (e.g., 3)
     pub fn write_to(&self, buf: &mut String, indent_level: usize) {
-        indent(buf, indent_level, format!("- name: {}", yaml_quote(&self.name)));
-        indent(buf, indent_level + 1, format!("id: {}", yaml_quote(&self.id)));
-        indent(buf, indent_level + 1, format!("uses: {}", yaml_quote(&self.uses)));
+        indent(
+            buf,
+            indent_level,
+            format!("- name: {}", yaml_quote(&self.name)),
+        );
+        indent(
+            buf,
+            indent_level + 1,
+            format!("id: {}", yaml_quote(&self.id)),
+        );
+        indent(
+            buf,
+            indent_level + 1,
+            format!("uses: {}", yaml_quote(&self.uses)),
+        );
         indent(buf, indent_level + 1, "with:");
         indent(
             buf,
