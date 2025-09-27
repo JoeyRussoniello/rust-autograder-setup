@@ -1,4 +1,4 @@
-use crate::types::AutoTest;
+use crate::types::{AutoTest, TestKind, TestMeta};
 /// A helper module for individual AutoTest Creation
 use std::collections::HashSet;
 
@@ -28,28 +28,29 @@ fn clippy_autotest_for(manifest_path: &str, points: u32) -> AutoTest {
     }
 
     AutoTest {
-        name,
-        timeout: 10,
-        points,
-        docstring: doc,
-        // NOTE: your README calls this field `num_commits`; consider renaming for consistency.
-        min_tests: None,
-        min_commits: None,
-        manifest_path: manifest_path_opt,
+        meta: TestMeta {
+            name,
+            points,
+            timeout: 10,
+            description: doc.clone(),
+        },
+        kind: TestKind::Clippy {
+            manifest_path: manifest_path_opt,
+        },
     }
 }
 
 pub fn commit_count_autotests(n: u32, points: u32) -> Vec<AutoTest> {
     (1..=n)
         .map(|i| AutoTest {
-            name: format!("COMMIT_COUNT_{}", i),
-            timeout: 10,
-            points,
-            // `table` replaces the "##" later—leave as-is.
-            docstring: "Ensures at least ## commits.".to_string(),
-            min_commits: Some(i),
-            min_tests: None,
-            manifest_path: None,
+            meta: TestMeta {
+                name: format!("COMMIT_COUNT_{}", i),
+                timeout: 10,
+                points,
+                // ## Intentionally left to allow flexibility when reading autograder.json
+                description: "Ensures at least ## commits.".to_string(),
+            },
+            kind: TestKind::CommitCount { min_commits: i },
         })
         .collect()
 }
@@ -83,13 +84,16 @@ fn test_count_autotest_for(manifest_path: &str, points: u32, required_tests: u32
     }
 
     AutoTest {
-        name,
-        timeout: 10,
-        points,
-        docstring,
-        min_commits: None,
-        min_tests: Some(required_tests),
-        manifest_path: manifest_path_opt,
+        meta: TestMeta {
+            name,
+            points,
+            timeout: 10,
+            description: docstring.clone(),
+        },
+        kind: TestKind::TestCount {
+            min_tests: required_tests,
+            manifest_path: manifest_path_opt,
+        },
     }
 }
 

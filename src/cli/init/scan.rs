@@ -8,7 +8,7 @@ use syn::parse::Parser;
 use syn::punctuated::Punctuated;
 use syn::{Attribute, Expr, File, Item, ItemFn, Lit, Meta, visit::Visit};
 
-use crate::types::AutoTest;
+use crate::types::{AutoTest, TestKind, TestMeta};
 use crate::utils::{RustFile, to_rel_unix_path};
 
 //TODO: Replace Files with its own type
@@ -75,10 +75,8 @@ impl TestWithManifest {
             .map(|m| to_rel_unix_path(root, m)) // unix-style, relative to repo root
     }
 
-    #[must_use]
-    #[allow(clippy::wrong_self_convention)]
     /// Create an autotest from the TestWithManifest - consumes the item
-    pub fn to_autotest(self, root: &Path, num_points: u32) -> AutoTest {
+    pub fn to_autotest(&self, root: &Path, num_points: u32) -> AutoTest {
         // * Don't manifest path to ./Cargo.toml for brevity and easier to read jsons/YAMLs
         let mut manifest_path = self.get_manifest_path_string(root);
         if let Some(p) = &manifest_path
@@ -87,14 +85,16 @@ impl TestWithManifest {
             manifest_path = None;
         }
 
+        // Move the test name out of the reference
+        let name = self.test.name.clone();
         AutoTest {
-            name: self.test.name,
-            timeout: 10,
-            points: num_points,
-            docstring: self.test.docstring,
-            min_commits: None,
-            min_tests: None,
-            manifest_path,
+            meta: TestMeta {
+                name,
+                timeout: 10,
+                points: num_points,
+                description: self.test.docstring.clone(),
+            },
+            kind: TestKind::CargoTest { manifest_path },
         }
     }
 }
