@@ -141,10 +141,5 @@ pub fn get_tests_dir(root: &Path, tests_dir_name: &Path) -> PathBuf {
     }
 }
 
-/// A helper function to standardize the commit count shell script file name from a string
-pub fn get_commit_count_file_name_from_str(name: &str) -> String {
-    format!("{}.sh", name.to_lowercase())
-}
-
 #[cfg(test)]
 pub mod tests;

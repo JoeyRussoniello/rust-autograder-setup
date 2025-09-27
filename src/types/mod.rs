@@ -74,7 +74,7 @@ impl AutoTest {
                 cargo_test_cmd(&self.meta.name, manifest_path.as_deref())
             }
             TestKind::Clippy { manifest_path } => clippy_cmd(manifest_path.as_deref()),
-            TestKind::CommitCount { .. } => commit_count_cmd(&self.meta.name),
+            TestKind::CommitCount { min_commits } => commit_count_cmd(min_commits),
             TestKind::TestCount {
                 min_tests,
                 manifest_path,
@@ -97,64 +97,3 @@ impl MarkdownTableRow for AutoTest {
         ]
     }
 }
-
-// //-----------AutograderCommandTypes------------------
-// #[derive(Debug, Clone, PartialEq, Eq)]
-// pub enum StepCmd {
-//     CargoTest {
-//         function_name: String,
-//         manifest_path: Option<String>,
-//     },
-//     ClippyCheck {
-//         manifest_path: Option<String>,
-//     },
-//     CommitCount {
-//         name: String,
-//         min: u32,
-//     },
-//     TestCount {
-//         manifest_path: Option<String>,
-//         min: u32,
-//     },
-//}
-
-// impl StepCmd {
-//     pub fn command(&self) -> String {
-//         match self {
-//             StepCmd::CargoTest {
-//                 function_name,
-//                 manifest_path,
-//             } => match manifest_path {
-//                 Some(p) if !p.is_empty() && p != "Cargo.toml" => {
-//                     format!("cargo test {} --manifest-path {}", function_name.trim(), p)
-//                 }
-//                 _ => format!("cargo test {}", function_name.trim()),
-//             },
-//             StepCmd::ClippyCheck { manifest_path } => match manifest_path {
-//                 Some(p) if !p.is_empty() && p != "." => {
-//                     format!("cargo clippy --manifest-path {} -- -D warnings", p)
-//                 }
-//                 _ => "cargo clippy -- -D warnings".to_string(),
-//             },
-//             StepCmd::CommitCount { name, .. } => {
-//                 format!(
-//                     "bash ./.autograder/{}",
-//                     get_commit_count_file_name_from_str(name)
-//                 )
-//             }
-//             // Populate a shell script for a specific manifest path, or leave blank
-//             StepCmd::TestCount { min, manifest_path } => match manifest_path {
-//                 Some(p) if !p.is_empty() && p != "Cargo.toml" => {
-//                     format!(
-//                         r#"cargo test --manifest-path {} -- --list | tail -1 | awk '{{print $1}}' | awk '{{if ($1 < {}+##) {{print "Too few tests ("$1-##") expected {}"; exit 1}}}}'"#,
-//                         p, min, min
-//                     )
-//                 }
-//                 _ => format!(
-//                     r#"cargo test -- --list | tail -1 | awk '{{print $1}}' | awk '{{if ($1 < {}+##) {{print "Too few tests ("$1-##") expected {}"; exit 1}}}}'"#,
-//                     min, min
-//                 ),
-//             },
-//         }
-//     }
-// }

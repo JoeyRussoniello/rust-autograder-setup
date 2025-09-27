@@ -2,9 +2,7 @@ use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
 use crate::types::{AutoTest, TestKind};
-use crate::utils::{
-    get_commit_count_file_name_from_str, read_autograder_config, replace_double_hashtag, slug_id,
-};
+use crate::utils::{read_autograder_config, replace_double_hashtag, slug_id};
 
 use build_functions::{get_yaml_preamble, write_commit_count_shell};
 use std::collections::{BTreeMap, HashMap};
@@ -116,12 +114,8 @@ impl YAMLAutograder {
                     let n = *counts_by_manifest.get(manifest_path).unwrap_or(&0);
                     self.compile_test_step(test, &replace_double_hashtag(&base, n));
                 }
-                TestKind::CommitCount { min_commits } => {
-                    write_commit_count_shell(
-                        &self.root,
-                        *min_commits,
-                        &get_commit_count_file_name_from_str(&test.meta.name),
-                    )?;
+                TestKind::CommitCount { .. } => {
+                    write_commit_count_shell(&self.root)?;
                     self.compile_test_step(test, &test.command());
                 }
                 _ => self.compile_test_step(test, &test.command()),
