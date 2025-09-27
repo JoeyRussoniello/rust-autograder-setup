@@ -37,7 +37,9 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
                 points: 2,
                 description: "".into(),
             },
-            kind: TestKind::CargoTest { manifest_path: None },
+            kind: TestKind::CargoTest {
+                manifest_path: None,
+            },
         },
         AutoTest {
             meta: TestMeta {
@@ -46,7 +48,9 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
                 points: 0,
                 description: "".into(),
             },
-            kind: TestKind::Clippy { manifest_path: None },
+            kind: TestKind::Clippy {
+                manifest_path: None,
+            },
         },
         AutoTest {
             meta: TestMeta {
@@ -55,7 +59,9 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
                 points: 3,
                 description: "".into(),
             },
-            kind: TestKind::CargoTest { manifest_path: None },
+            kind: TestKind::CargoTest {
+                manifest_path: None,
+            },
         },
     ];
     write_autograder_json(root, &tests)?;
@@ -82,9 +88,9 @@ fn run_generates_yaml_pruning_zero_point_and_using_exact_commands() -> anyhow::R
 
     // Reporter env/runners
     assert!(yaml.contains(r#"TEST-ONE_RESULTS: "${{steps.test-one.outputs.result}}""#));
-    assert!(yaml.contains(
-        r#"TOKIO-ASYNC-TEST_RESULTS: "${{steps.tokio-async-test.outputs.result}}""#
-    ));
+    assert!(
+        yaml.contains(r#"TOKIO-ASYNC-TEST_RESULTS: "${{steps.tokio-async-test.outputs.result}}""#)
+    );
     assert!(yaml.contains("runners: test-one,tokio-async-test"));
     Ok(())
 }
@@ -100,16 +106,20 @@ fn compile_includes_clippy_command_when_points_positive() {
             points: 1,
             description: "".into(),
         },
-        kind: TestKind::Clippy { manifest_path: None },
+        kind: TestKind::Clippy {
+            manifest_path: None,
+        },
     }]);
 
     let out = ya.compile().expect("Unable to compile YAML");
     assert!(out.contains(r#"- name: CLIPPY_STYLE_CHECK"#));
     assert!(out.contains(r#"command: "cargo clippy -- -D warnings""#));
     assert!(out.contains(r#"max-score: 1"#));
-    assert!(out.contains(
-        r#"CLIPPY-STYLE-CHECK_RESULTS: "${{steps.clippy-style-check.outputs.result}}""#
-    ));
+    assert!(
+        out.contains(
+            r#"CLIPPY-STYLE-CHECK_RESULTS: "${{steps.clippy-style-check.outputs.result}}""#
+        )
+    );
     assert!(out.contains("runners: clippy-style-check"));
 }
 
@@ -184,7 +194,9 @@ fn run_includes_manifest_path_when_present() -> anyhow::Result<()> {
                 points: 1,
                 description: "".into(),
             },
-            kind: TestKind::CargoTest { manifest_path: None },
+            kind: TestKind::CargoTest {
+                manifest_path: None,
+            },
         },
     ];
     write_autograder_json(root, &tests)?;
@@ -199,9 +211,9 @@ fn run_includes_manifest_path_when_present() -> anyhow::Result<()> {
     // With manifest_path
     assert!(yaml.contains(r#"- name: unit_adds"#));
     assert!(yaml.contains(r#"test-name: "unit_adds""#));
-    assert!(yaml.contains(
-        r#"command: "cargo test unit_adds --manifest-path questions/q1/Cargo.toml""#
-    ));
+    assert!(
+        yaml.contains(r#"command: "cargo test unit_adds --manifest-path questions/q1/Cargo.toml""#)
+    );
     assert!(yaml.contains(r#"max-score: 2"#));
 
     // Without manifest_path
@@ -212,12 +224,8 @@ fn run_includes_manifest_path_when_present() -> anyhow::Result<()> {
     assert!(yaml.contains(r#"max-score: 1"#));
 
     // Reporter wiring
-    assert!(yaml.contains(
-        r#"UNIT-ADDS_RESULTS: "${{steps.unit-adds.outputs.result}}""#
-    ));
-    assert!(yaml.contains(
-        r#"ROOT-CASE_RESULTS: "${{steps.root-case.outputs.result}}""#
-    ));
+    assert!(yaml.contains(r#"UNIT-ADDS_RESULTS: "${{steps.unit-adds.outputs.result}}""#));
+    assert!(yaml.contains(r#"ROOT-CASE_RESULTS: "${{steps.root-case.outputs.result}}""#));
     assert!(yaml.contains("runners: unit-adds,root-case"));
 
     Ok(())

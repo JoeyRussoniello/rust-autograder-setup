@@ -1,7 +1,7 @@
 use super::scan::{Test, extract_tests};
 use super::*;
-use crate::utils::read_autograder_config;
 use crate::types::{AutoTest, TestKind};
+use crate::utils::read_autograder_config;
 use std::fs;
 use std::path::PathBuf;
 use tempfile::tempdir;
@@ -55,7 +55,6 @@ fn manifest_path_str(t: &AutoTest) -> Option<&str> {
         TestKind::CommitCount { .. } => None,
     }
 }
-
 
 #[test]
 fn finds_plain_test() {
@@ -424,13 +423,15 @@ fn creates_single_commit_count_step_by_default() {
     fs::write(src_dir.join("lib.rs"), "#[test] fn a() {}").unwrap();
 
     super::run(
-        dir.path(), &src_dir,
+        dir.path(),
+        &src_dir,
         1,
         false, // style_check
         true,  // commit_counts
         1,     // num_commit_checks
         0,
-    ).unwrap();
+    )
+    .unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
     let commit_steps: Vec<_> = items.iter().filter(|t| is_commit_count(t)).collect();
@@ -447,13 +448,15 @@ fn creates_multiple_commit_count_steps() {
     fs::write(src_dir.join("lib.rs"), "#[test] fn a() {}").unwrap();
 
     super::run(
-        dir.path(), &src_dir,
+        dir.path(),
+        &src_dir,
         1,
         false,
-        true,  // commit_counts
-        3,     // num_commit_checks
+        true, // commit_counts
+        3,    // num_commit_checks
         0,
-    ).unwrap();
+    )
+    .unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
     let commit_steps: Vec<_> = items.iter().filter(|t| is_commit_count(t)).collect();
@@ -473,19 +476,20 @@ fn does_not_create_commit_count_steps_if_disabled() {
     fs::write(src_dir.join("lib.rs"), "#[test] fn a() {}").unwrap();
 
     super::run(
-        dir.path(), &src_dir,
+        dir.path(),
+        &src_dir,
         1,
         false, // style_check
         false, // commit_counts
         5,     // ignored
         0,
-    ).unwrap();
+    )
+    .unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
     let commit_steps: Vec<_> = items.iter().filter(|t| is_commit_count(t)).collect();
     assert_eq!(commit_steps.len(), 0);
 }
-
 
 #[test]
 fn manifest_paths_are_distinct_and_relative() {
@@ -560,11 +564,16 @@ fn test_count_member_uses_member_manifest_path_in_name() {
 
     // workspace + member
     fs::create_dir_all(dir.path().join("member/src")).unwrap();
-    fs::write(dir.path().join("Cargo.toml"), "[workspace]\nmembers=[\"member\"]\n").unwrap();
+    fs::write(
+        dir.path().join("Cargo.toml"),
+        "[workspace]\nmembers=[\"member\"]\n",
+    )
+    .unwrap();
     fs::write(
         dir.path().join("member/Cargo.toml"),
         "[package]\nname=\"member\"\nversion=\"0.1.0\"\n",
-    ).unwrap();
+    )
+    .unwrap();
     fs::write(dir.path().join("member/src/lib.rs"), "#[test] fn m() {}").unwrap();
 
     super::run(
@@ -575,7 +584,8 @@ fn test_count_member_uses_member_manifest_path_in_name() {
         false,
         1,
         1, // require at least 1 test
-    ).unwrap();
+    )
+    .unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
     let member = test_count_steps(&items)
@@ -598,27 +608,36 @@ fn creates_single_test_count_step_for_root_when_required() {
     fs::write(
         dir.path().join("Cargo.toml"),
         "[package]\nname=\"root\"\nversion=\"0.1.0\"\n",
-    ).unwrap();
+    )
+    .unwrap();
     fs::write(dir.path().join("src/lib.rs"), "#[test] fn a() {}").unwrap();
 
     super::run(
         dir.path(),
         dir.path(),
-        1,          // default points
-        false,      // style_check
-        false,      // commit_counts
-        1,          // ignored
-        3,          // require_tests
-    ).unwrap();
+        1,     // default points
+        false, // style_check
+        false, // commit_counts
+        1,     // ignored
+        3,     // require_tests
+    )
+    .unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
     let steps = test_count_steps(&items);
-    assert_eq!(steps.len(), 1, "expected exactly one TEST_COUNT step for root");
+    assert_eq!(
+        steps.len(),
+        1,
+        "expected exactly one TEST_COUNT step for root"
+    );
 
     let s = steps[0];
     assert_eq!(s.meta.name, "TEST_COUNT");
     assert_eq!(min_tests(s), Some(3));
-    assert!(manifest_path_str(s).is_none(), "root should not store manifest_path");
+    assert!(
+        manifest_path_str(s).is_none(),
+        "root should not store manifest_path"
+    );
 
     // Description may be templated in config; compare the resolved form
     assert_eq!(s.resolved_description(), "Submission has at least 3 tests");
@@ -633,7 +652,8 @@ fn creates_test_count_steps_for_each_manifest_in_workspace() {
         r#"[workspace]
 members = ["member"]
 "#,
-    ).unwrap();
+    )
+    .unwrap();
 
     fs::create_dir_all(dir.path().join("src")).unwrap();
     fs::write(dir.path().join("src/lib.rs"), "#[test] fn root_test() {}").unwrap();
@@ -645,29 +665,45 @@ members = ["member"]
 name = "member"
 version = "0.1.0"
 "#,
-    ).unwrap();
-    fs::write(dir.path().join("member/src/lib.rs"), "#[test] fn member_test() {}").unwrap();
+    )
+    .unwrap();
+    fs::write(
+        dir.path().join("member/src/lib.rs"),
+        "#[test] fn member_test() {}",
+    )
+    .unwrap();
 
     super::run(
         dir.path(),
         dir.path(),
-        2,      // default points
-        true,   // style_check (irrelevant here)
-        false,  // commit_counts
-        3,      // ignored
-        5,      // require_tests
-    ).unwrap();
+        2,     // default points
+        true,  // style_check (irrelevant here)
+        false, // commit_counts
+        3,     // ignored
+        5,     // require_tests
+    )
+    .unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
     let steps = test_count_steps(&items);
-    assert_eq!(steps.len(), 2, "expected TEST_COUNT for both root and member");
+    assert_eq!(
+        steps.len(),
+        2,
+        "expected TEST_COUNT for both root and member"
+    );
 
     // Root
-    let root = steps.iter().find(|s| manifest_path_str(s).is_none()).expect("missing root TEST_COUNT");
+    let root = steps
+        .iter()
+        .find(|s| manifest_path_str(s).is_none())
+        .expect("missing root TEST_COUNT");
     assert_eq!(root.meta.name, "TEST_COUNT");
     assert_eq!(root.meta.points, 2);
     assert_eq!(min_tests(root), Some(5));
-    assert_eq!(root.resolved_description(), "Submission has at least 5 tests");
+    assert_eq!(
+        root.resolved_description(),
+        "Submission has at least 5 tests"
+    );
 
     // Member
     let member = steps
@@ -683,7 +719,10 @@ version = "0.1.0"
     );
     assert_eq!(member.meta.points, 2);
     assert_eq!(min_tests(member), Some(5));
-    assert_eq!(member.resolved_description(), "member submission has at least 5 tests");
+    assert_eq!(
+        member.resolved_description(),
+        "member submission has at least 5 tests"
+    );
 }
 
 #[test]
@@ -694,7 +733,8 @@ fn does_not_create_test_count_steps_when_disabled() {
     fs::write(
         dir.path().join("Cargo.toml"),
         "[package]\nname=\"root\"\nversion=\"0.1.0\"\n",
-    ).unwrap();
+    )
+    .unwrap();
     fs::write(dir.path().join("src/lib.rs"), "#[test] fn a() {}").unwrap();
 
     super::run(
@@ -705,8 +745,12 @@ fn does_not_create_test_count_steps_when_disabled() {
         true,  // commit_counts (unrelated)
         2,     // creates commit steps, but not test-count steps
         0,     // require_tests disabled
-    ).unwrap();
+    )
+    .unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
-    assert!(test_count_steps(&items).is_empty(), "no TEST_COUNT steps when require_tests == 0");
+    assert!(
+        test_count_steps(&items).is_empty(),
+        "no TEST_COUNT steps when require_tests == 0"
+    );
 }

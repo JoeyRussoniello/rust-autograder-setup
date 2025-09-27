@@ -121,7 +121,7 @@ impl YAMLAutograder {
 
         for test in tests.iter() {
             match &test.kind {
-                TestKind::TestCount { manifest_path , ..} => {
+                TestKind::TestCount { manifest_path, .. } => {
                     let base_command = test.command();
                     // ? Maybe revisit defaulting to zero
                     let num_cargo_tests = counts_by_manifest.get(manifest_path).unwrap_or(&0);
@@ -129,15 +129,15 @@ impl YAMLAutograder {
                         test,
                         &replace_double_hashtag(&base_command, *num_cargo_tests),
                     )
-                },
+                }
                 TestKind::CommitCount { min_commits } => {
                     write_commit_count_shell(
-                        &self.root, 
+                        &self.root,
                         *min_commits,
-                        &get_commit_count_file_name_from_str(&test.meta.name)
+                        &get_commit_count_file_name_from_str(&test.meta.name),
                     )?;
                     self.compile_test_step(test, &test.command());
-                },
+                }
                 _ => self.compile_test_step(test, &test.command()),
             }
             self.autograder_content.push('\n');
