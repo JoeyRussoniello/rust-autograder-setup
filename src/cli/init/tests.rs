@@ -1,6 +1,7 @@
 use super::scan::{Test, extract_tests};
 use super::*;
 use crate::utils::read_autograder_config;
+use crate::types::{AutoTest, TestKind};
 use std::fs;
 use std::path::PathBuf;
 use tempfile::tempdir;
@@ -14,19 +15,47 @@ fn extract_test_names(src: &str) -> Vec<String> {
         .collect()
 }
 
-/// Helper function to extract TEST_COUNT test cases
-fn test_count_steps(items: &[AutoTest]) -> Vec<&AutoTest> {
-    items
-        .iter()
-        .filter(|t| t.name.starts_with("TEST_COUNT"))
-        .collect()
-}
-
 fn sorted(names: Vec<String>) -> Vec<String> {
     let mut v = names.clone();
     v.sort();
     v
 }
+
+/// -------------------Helper for extracting fields from AutoTest------------------
+fn is_test_count(t: &AutoTest) -> bool {
+    matches!(t.kind, TestKind::TestCount { .. })
+}
+
+fn is_commit_count(t: &AutoTest) -> bool {
+    matches!(t.kind, TestKind::CommitCount { .. })
+}
+/// Filter TEST_COUNT steps (by variant, not by name)
+fn test_count_steps<'a>(items: &'a [AutoTest]) -> Vec<&'a AutoTest> {
+    items.iter().filter(|t| is_test_count(t)).collect()
+}
+
+/// Pull out fields asserted on frequently
+fn min_commits(t: &AutoTest) -> Option<u32> {
+    match t.kind {
+        TestKind::CommitCount { min_commits } => Some(min_commits),
+        _ => None,
+    }
+}
+fn min_tests(t: &AutoTest) -> Option<u32> {
+    match t.kind {
+        TestKind::TestCount { min_tests, .. } => Some(min_tests),
+        _ => None,
+    }
+}
+fn manifest_path_str(t: &AutoTest) -> Option<&str> {
+    match &t.kind {
+        TestKind::CargoTest { manifest_path }
+        | TestKind::Clippy { manifest_path }
+        | TestKind::TestCount { manifest_path, .. } => manifest_path.as_deref(),
+        TestKind::CommitCount { .. } => None,
+    }
+}
+
 
 #[test]
 fn finds_plain_test() {
@@ -394,25 +423,20 @@ fn creates_single_commit_count_step_by_default() {
     fs::create_dir(&src_dir).unwrap();
     fs::write(src_dir.join("lib.rs"), "#[test] fn a() {}").unwrap();
 
-    // Only one commit count step by default
     super::run(
-        dir.path(),
-        &src_dir,
+        dir.path(), &src_dir,
         1,
         false, // style_check
         true,  // commit_counts
         1,     // num_commit_checks
         0,
-    )
-    .unwrap();
+    ).unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
-    let commit_steps: Vec<_> = items
-        .iter()
-        .filter(|t| t.name.starts_with("COMMIT_COUNT"))
-        .collect();
+    let commit_steps: Vec<_> = items.iter().filter(|t| is_commit_count(t)).collect();
+
     assert_eq!(commit_steps.len(), 1);
-    assert_eq!(commit_steps[0].min_commits, Some(1));
+    assert_eq!(min_commits(commit_steps[0]), Some(1));
 }
 
 #[test]
@@ -422,27 +446,22 @@ fn creates_multiple_commit_count_steps() {
     fs::create_dir(&src_dir).unwrap();
     fs::write(src_dir.join("lib.rs"), "#[test] fn a() {}").unwrap();
 
-    // Request 3 commit count steps
     super::run(
-        dir.path(),
-        &src_dir,
+        dir.path(), &src_dir,
         1,
-        false, // style_check
+        false,
         true,  // commit_counts
         3,     // num_commit_checks
         0,
-    )
-    .unwrap();
+    ).unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
-    let commit_steps: Vec<_> = items
-        .iter()
-        .filter(|t| t.name.starts_with("COMMIT_COUNT"))
-        .collect();
+    let commit_steps: Vec<_> = items.iter().filter(|t| is_commit_count(t)).collect();
     assert_eq!(commit_steps.len(), 3);
+
     for (i, step) in commit_steps.iter().enumerate() {
-        assert_eq!(step.name, format!("COMMIT_COUNT_{}", i + 1));
-        assert_eq!(step.min_commits, Some((i + 1) as u32));
+        assert_eq!(step.meta.name, format!("COMMIT_COUNT_{}", i + 1));
+        assert_eq!(min_commits(step), Some((i + 1) as u32));
     }
 }
 
@@ -454,23 +473,19 @@ fn does_not_create_commit_count_steps_if_disabled() {
     fs::write(src_dir.join("lib.rs"), "#[test] fn a() {}").unwrap();
 
     super::run(
-        dir.path(),
-        &src_dir,
+        dir.path(), &src_dir,
         1,
         false, // style_check
         false, // commit_counts
-        5,     // num_commit_checks (should be ignored)
+        5,     // ignored
         0,
-    )
-    .unwrap();
+    ).unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
-    let commit_steps: Vec<_> = items
-        .iter()
-        .filter(|t| t.name.starts_with("COMMIT_COUNT"))
-        .collect();
+    let commit_steps: Vec<_> = items.iter().filter(|t| is_commit_count(t)).collect();
     assert_eq!(commit_steps.len(), 0);
 }
+
 
 #[test]
 fn manifest_paths_are_distinct_and_relative() {
@@ -543,18 +558,13 @@ fn manifest_path_absolute_is_preserved() {
 fn test_count_member_uses_member_manifest_path_in_name() {
     let dir = tempdir().unwrap();
 
-    // Minimal member crate
+    // workspace + member
     fs::create_dir_all(dir.path().join("member/src")).unwrap();
-    fs::write(
-        dir.path().join("Cargo.toml"),
-        "[workspace]\nmembers=[\"member\"]\n",
-    )
-    .unwrap();
+    fs::write(dir.path().join("Cargo.toml"), "[workspace]\nmembers=[\"member\"]\n").unwrap();
     fs::write(
         dir.path().join("member/Cargo.toml"),
         "[package]\nname=\"member\"\nversion=\"0.1.0\"\n",
-    )
-    .unwrap();
+    ).unwrap();
     fs::write(dir.path().join("member/src/lib.rs"), "#[test] fn m() {}").unwrap();
 
     super::run(
@@ -565,20 +575,18 @@ fn test_count_member_uses_member_manifest_path_in_name() {
         false,
         1,
         1, // require at least 1 test
-    )
-    .unwrap();
+    ).unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
     let member = test_count_steps(&items)
         .into_iter()
-        .find(|s| s.manifest_path.as_deref() == Some("member/Cargo.toml"))
+        .find(|s| manifest_path_str(s) == Some("member/Cargo.toml"))
         .expect("missing member TEST_COUNT");
 
-    // Current implementation uppercases the *full manifest path* in the name:
     assert!(
-        member.name.contains("MEMBER/CARGO.TOML"),
-        "expected member TEST_COUNT name to contain uppercased manifest path; got {}",
-        member.name
+        member.meta.name.contains("MEMBER/CARGO.TOML"),
+        "expected uppercased manifest path in name; got {}",
+        member.meta.name
     );
 }
 
@@ -586,63 +594,50 @@ fn test_count_member_uses_member_manifest_path_in_name() {
 fn creates_single_test_count_step_for_root_when_required() {
     let dir = tempdir().unwrap();
 
-    // Root crate
     fs::create_dir_all(dir.path().join("src")).unwrap();
     fs::write(
         dir.path().join("Cargo.toml"),
         "[package]\nname=\"root\"\nversion=\"0.1.0\"\n",
-    )
-    .unwrap();
+    ).unwrap();
     fs::write(dir.path().join("src/lib.rs"), "#[test] fn a() {}").unwrap();
 
-    // Scan the whole root so we see the root manifest
     super::run(
         dir.path(),
-        dir.path(), // tests_dir_name
+        dir.path(),
         1,          // default points
         false,      // style_check
         false,      // commit_counts
-        1,          // num_commit_checks (ignored because commit_counts=false)
-        3,          // require_tests => create TEST_COUNT steps
-    )
-    .unwrap();
+        1,          // ignored
+        3,          // require_tests
+    ).unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
     let steps = test_count_steps(&items);
-    assert_eq!(
-        steps.len(),
-        1,
-        "expected exactly one TEST_COUNT step for root"
-    );
+    assert_eq!(steps.len(), 1, "expected exactly one TEST_COUNT step for root");
 
     let s = steps[0];
-    assert_eq!(s.name, "TEST_COUNT");
-    assert_eq!(s.min_tests, Some(3));
-    assert!(
-        s.manifest_path.is_none(),
-        "root TEST_COUNT should not store manifest_path"
-    );
-    assert_eq!(s.docstring, "Submission has at least 3 tests");
+    assert_eq!(s.meta.name, "TEST_COUNT");
+    assert_eq!(min_tests(s), Some(3));
+    assert!(manifest_path_str(s).is_none(), "root should not store manifest_path");
+
+    // Description may be templated in config; compare the resolved form
+    assert_eq!(s.resolved_description(), "Submission has at least 3 tests");
 }
 
 #[test]
 fn creates_test_count_steps_for_each_manifest_in_workspace() {
     let dir = tempdir().unwrap();
 
-    // Root workspace with a member crate `member/`
     fs::write(
         dir.path().join("Cargo.toml"),
         r#"[workspace]
 members = ["member"]
 "#,
-    )
-    .unwrap();
+    ).unwrap();
 
-    // Root crate has tests
     fs::create_dir_all(dir.path().join("src")).unwrap();
     fs::write(dir.path().join("src/lib.rs"), "#[test] fn root_test() {}").unwrap();
 
-    // Member crate with its own tests
     fs::create_dir_all(dir.path().join("member/src")).unwrap();
     fs::write(
         dir.path().join("member/Cargo.toml"),
@@ -650,64 +645,45 @@ members = ["member"]
 name = "member"
 version = "0.1.0"
 "#,
-    )
-    .unwrap();
-    fs::write(
-        dir.path().join("member/src/lib.rs"),
-        "#[test] fn member_test() {}",
-    )
-    .unwrap();
+    ).unwrap();
+    fs::write(dir.path().join("member/src/lib.rs"), "#[test] fn member_test() {}").unwrap();
 
-    // Scan the whole root so we see *both* manifests
     super::run(
         dir.path(),
-        dir.path(), // tests_dir_name
-        2,          // default points (arbitrary)
-        true,       // style_check (unrelated here)
-        false,      // commit_counts
-        3,          // num_commit_checks (ignored)
-        5,          // require_tests => generate TEST_COUNT for each manifest path
-    )
-    .unwrap();
+        dir.path(),
+        2,      // default points
+        true,   // style_check (irrelevant here)
+        false,  // commit_counts
+        3,      // ignored
+        5,      // require_tests
+    ).unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
     let steps = test_count_steps(&items);
-
-    // Expect two TEST_COUNT steps: one for root, one for member
-    assert_eq!(
-        steps.len(),
-        2,
-        "expected TEST_COUNT for both root and member"
-    );
+    assert_eq!(steps.len(), 2, "expected TEST_COUNT for both root and member");
 
     // Root
-    let root = steps
-        .iter()
-        .find(|s| s.manifest_path.is_none())
-        .expect("missing root TEST_COUNT");
-    assert_eq!(root.name, "TEST_COUNT");
-    assert_eq!(root.points, 2);
-    assert_eq!(root.min_tests, Some(5));
-    assert_eq!(root.docstring, "Submission has at least 5 tests");
+    let root = steps.iter().find(|s| manifest_path_str(s).is_none()).expect("missing root TEST_COUNT");
+    assert_eq!(root.meta.name, "TEST_COUNT");
+    assert_eq!(root.meta.points, 2);
+    assert_eq!(min_tests(root), Some(5));
+    assert_eq!(root.resolved_description(), "Submission has at least 5 tests");
 
-    // Member (note the uppercased full manifest path in the name per your implementation)
+    // Member
     let member = steps
         .iter()
-        .find(|s| s.manifest_path.as_deref() == Some("member/Cargo.toml"))
+        .find(|s| manifest_path_str(s) == Some("member/Cargo.toml"))
         .expect("missing member TEST_COUNT");
 
+    assert!(member.meta.name.starts_with("TEST_COUNT_"));
     assert!(
-        member.name.starts_with("TEST_COUNT_"),
-        "member TEST_COUNT should be prefixed with TEST_COUNT_"
-    );
-    assert!(
-        member.name.contains("MEMBER/CARGO.TOML"),
+        member.meta.name.contains("MEMBER/CARGO.TOML"),
         "member TEST_COUNT name should include uppercased manifest path; got {}",
-        member.name
+        member.meta.name
     );
-    assert_eq!(member.points, 2);
-    assert_eq!(member.min_tests, Some(5));
-    assert_eq!(member.docstring, "member submission has at least 5 tests");
+    assert_eq!(member.meta.points, 2);
+    assert_eq!(min_tests(member), Some(5));
+    assert_eq!(member.resolved_description(), "member submission has at least 5 tests");
 }
 
 #[test]
@@ -718,24 +694,19 @@ fn does_not_create_test_count_steps_when_disabled() {
     fs::write(
         dir.path().join("Cargo.toml"),
         "[package]\nname=\"root\"\nversion=\"0.1.0\"\n",
-    )
-    .unwrap();
+    ).unwrap();
     fs::write(dir.path().join("src/lib.rs"), "#[test] fn a() {}").unwrap();
 
     super::run(
         dir.path(),
-        dir.path(), // tests_dir_name
+        dir.path(),
         1,
         false, // style_check
         true,  // commit_counts (unrelated)
-        2,     // num_commit_checks (creates commit steps, but not test-count steps)
+        2,     // creates commit steps, but not test-count steps
         0,     // require_tests disabled
-    )
-    .unwrap();
+    ).unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
-    assert!(
-        test_count_steps(&items).is_empty(),
-        "no TEST_COUNT steps should be present when require_tests == 0"
-    );
+    assert!(test_count_steps(&items).is_empty(), "no TEST_COUNT steps when require_tests == 0");
 }

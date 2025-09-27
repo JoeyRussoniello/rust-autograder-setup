@@ -55,7 +55,8 @@ fn mk_description(desc: &str, min: u32) -> String {
 }
 impl AutoTest {
     /// Fill tokens like {min_commits}, {min_tests}, {manifest_path}, {function}
-    fn resolved_description(&self) -> String {
+    /// Made public for testing
+    pub fn resolved_description(&self) -> String {
         match &self.kind {
             TestKind::CommitCount { min_commits } => {
                 mk_description(&self.meta.description, *min_commits)
