@@ -79,10 +79,10 @@ impl TestWithManifest {
     pub fn to_autotest(&self, root: &Path, num_points: u32) -> AutoTest {
         // * Don't manifest path to ./Cargo.toml for brevity and easier to read jsons/YAMLs
         let mut manifest_path = self.get_manifest_path_string(root);
-        if let Some(p) = &manifest_path
-            && p == "Cargo.toml"
-        {
-            manifest_path = None;
+        if let Some(p) = &manifest_path {
+            if p == "Cargo.toml" {
+                manifest_path = None;
+            }
         }
 
         // Move the test name out of the reference
