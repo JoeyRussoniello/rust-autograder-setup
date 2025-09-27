@@ -3,17 +3,19 @@ use std::path::{Path, PathBuf};
 
 use crate::types::{AutoTest, TestKind};
 use crate::utils::{
-    YAML_INDENT, get_commit_count_file_name_from_str, read_autograder_config,
-    replace_double_hashtag, slug_id, yaml_quote,
+    get_commit_count_file_name_from_str, read_autograder_config, replace_double_hashtag, slug_id,
 };
-use std::collections::HashMap;
+
+use build_functions::{get_yaml_preamble, write_commit_count_shell};
+use std::collections::{BTreeMap, HashMap};
 use std::fs::{File, create_dir_all};
+use steps::{CommandStep, CommandWith, ReporterStep};
 
 mod build_functions;
+mod steps;
 
 pub fn run(root: &Path, grade_on_push: bool) -> Result<()> {
     let tests = read_autograder_config(root)?;
-    println!("Found {:#?}", tests);
     let workflows_dir = root.join(".github").join("workflows");
     create_dir_all(&workflows_dir)
         .with_context(|| format!("Failed to create {}", workflows_dir.to_string_lossy()))?;
@@ -22,11 +24,11 @@ pub fn run(root: &Path, grade_on_push: bool) -> Result<()> {
     let workflow_path = workflows_dir.join("classroom.yml");
 
     let mut yaml_compiler = YAMLAutograder::new(root.to_path_buf());
-    yaml_compiler.set_preamble(build_functions::get_yaml_preamble(grade_on_push));
+    yaml_compiler.set_preamble(get_yaml_preamble(grade_on_push));
     yaml_compiler.set_tests(tests);
     let workflow_content = yaml_compiler.compile();
 
-    write_workflow(
+    create_and_write(
         &workflow_path,
         &workflow_content.expect("Unable to compile YAML"),
     )?;
@@ -37,7 +39,7 @@ pub fn run(root: &Path, grade_on_push: bool) -> Result<()> {
     Ok(())
 }
 
-fn write_workflow(path: &Path, content: &str) -> Result<()> {
+pub fn create_and_write(path: &Path, content: &str) -> Result<()> {
     let mut f = File::create(path)
         .with_context(|| format!("Failed to create {}", path.to_string_lossy()))?;
     use std::io::Write;
@@ -74,45 +76,32 @@ impl YAMLAutograder {
     }
 
     fn compile_test_step(&mut self, test: &AutoTest, cmd: &str) {
-        //println!("Compliting test step: {:#?}", test);
-        let name = test.meta.name.trim();
-        let id = slug_id(name);
-        let indent_level = 3;
+        let name = test.meta.name.trim().to_string();
+        let id = slug_id(&name);
         self.ids.push(id.clone());
 
-        self.insert_autograder_string(format!("- name: {}", name), indent_level);
-        self.insert_autograder_string(
-            format!(
-                "id: {}\nuses: classroom-resources/autograding-command-grader@v1\nwith:",
-                id
-            ),
-            indent_level + 1,
-        );
-
-        let full_command = if cmd == "cargo test" {
-            format!("{} {} -- --exact", cmd, name)
-        } else {
-            cmd.to_string()
+        let step = CommandStep {
+            name: name.clone(),
+            id,
+            uses: "classroom-resources/autograding-command-grader@v1".into(),
+            with: CommandWith {
+                test_name: name,
+                setup_command: "".into(),
+                command: cmd.into(),
+                timeout: test.meta.timeout,
+                max_score: test.meta.points,
+            },
         };
 
-        self.insert_autograder_string(
-            format!(
-                "test-name: {}\nsetup-command: {}\ncommand: {}\ntimeout: {}\nmax-score: {}\n",
-                yaml_quote(name),
-                yaml_quote(""),
-                yaml_quote(&full_command),
-                test.meta.timeout,
-                test.meta.points
-            ),
-            indent_level + 2,
-        );
+        // write it at the same indent (3) as before
+        step.write_to(&mut self.autograder_content, 3);
+        self.autograder_content.push('\n');
     }
 
-    fn compile_test_steps(&mut self) -> Result<()> {
-        //Clone tests to avoid an immutable borrow on self
+    fn compile_test_steps(&mut self) -> anyhow::Result<()> {
         let tests = self.tests.clone();
 
-        // Count the number of `cargo tests` present in each manifest path
+        // Count cargo tests per manifest
         let mut counts_by_manifest: HashMap<Option<String>, u32> = HashMap::new();
         for t in &tests {
             if let TestKind::CargoTest { manifest_path } = &t.kind {
@@ -120,16 +109,12 @@ impl YAMLAutograder {
             }
         }
 
-        for test in tests.iter() {
+        for test in &tests {
             match &test.kind {
                 TestKind::TestCount { manifest_path, .. } => {
-                    let base_command = test.command();
-                    // ? Maybe revisit defaulting to zero
-                    let num_cargo_tests = counts_by_manifest.get(manifest_path).unwrap_or(&0);
-                    self.compile_test_step(
-                        test,
-                        &replace_double_hashtag(&base_command, *num_cargo_tests),
-                    )
+                    let base = test.command();
+                    let n = *counts_by_manifest.get(manifest_path).unwrap_or(&0);
+                    self.compile_test_step(test, &replace_double_hashtag(&base, n));
                 }
                 TestKind::CommitCount { min_commits } => {
                     write_commit_count_shell(
@@ -141,40 +126,28 @@ impl YAMLAutograder {
                 }
                 _ => self.compile_test_step(test, &test.command()),
             }
-            self.autograder_content.push('\n');
         }
-
         Ok(())
     }
 
     fn compile_test_reporter(&mut self) {
-        let indent_level = 3;
-        self.insert_autograder_string("- name: Autograding Reporter".to_string(), indent_level);
-        self.insert_autograder_string(
-            "uses: classroom-resources/autograding-grading-reporter@v1\nenv:".to_string(),
-            indent_level + 1,
-        );
-
-        let ids = self.ids.clone();
-        for id in ids.iter() {
-            let env_key = format!("{}_RESULTS", id.to_uppercase());
-            self.insert_autograder_string(
-                format!("{}: \"${{{{steps.{}.outputs.result}}}}\"", env_key, id),
-                indent_level + 2,
+        let mut env = BTreeMap::new(); // stable order for clean diffs
+        for id in &self.ids {
+            env.insert(
+                format!("{}_RESULTS", id.to_uppercase()),
+                format!("${{{{steps.{id}.outputs.result}}}}"),
             );
         }
+        let runners_csv = self.ids.join(",");
 
-        self.insert_autograder_string("with:".to_string(), indent_level + 1);
-        self.insert_autograder_string(format!("runners: {}", self.ids.join(",")), indent_level + 2);
-    }
+        let reporter = ReporterStep {
+            name: "Autograding Reporter".into(),
+            uses: "classroom-resources/autograding-grading-reporter@v1".into(),
+            env,
+            runners_csv,
+        };
 
-    fn insert_autograder_string(&mut self, s: String, indent_level: usize) {
-        let indent = YAML_INDENT.repeat(indent_level);
-        //? Could raise error on multi-lines to avoid undetermined behavior
-        for line in s.lines() {
-            self.autograder_content
-                .push_str(&format!("{}{}\n", indent, line));
-        }
+        reporter.write_to(&mut self.autograder_content, 3);
     }
 
     fn compile(&mut self) -> Result<String> {
@@ -184,61 +157,6 @@ impl YAMLAutograder {
         self.compile_test_reporter();
         Ok(self.autograder_content.to_string())
     }
-}
-
-fn write_commit_count_shell(root: &Path, num_commits: u32, name: &str) -> Result<()> {
-    let script_path = root.join(".autograder").join(name);
-    // Shell script content
-    let script = format!(
-        r#"#!/usr/bin/env bash
-# tests/commit_count.sh
-set -euo pipefail
-
-# Usage:
-#   MIN=3 bash tests/commit_count.sh
-#   bash tests/commit_count.sh -m 3
-
-MIN={min}
-
-# Validate MIN
-if ! [[ "$MIN" =~ ^[0-9]+$ ]]; then
-  echo "MIN must be a non-negative integer; got: '$MIN'" >&2
-  exit 2
-fi
-
-# Ensure we're in a git repo
-if ! git rev-parse --git-dir >/dev/null 2>&1; then
-  echo "Not a git repository (are you running inside the checkout?)" >&2
-  exit 1
-fi
-
-# Warn if shallow (runner must checkout with fetch-depth: 0 for full history)
-if [ -f "$(git rev-parse --git-dir)/shallow" ]; then
-  echo "Warning: shallow clone detected; commit count may be incomplete." >&2
-fi
-
-# Count commits
-COUNT=$(git rev-list --count HEAD 2>/dev/null || echo 0)
-
-if [ "$COUNT" -ge "$MIN" ]; then
-  echo "✅ Found $COUNT commits (min $MIN) — PASS"
-  exit 0
-else
-  echo "❌ Found $COUNT commits (min $MIN) — FAIL"
-  exit 1
-fi
-"#,
-        min = num_commits
-    );
-
-    // Write the file
-    write_workflow(&script_path, &script)?;
-
-    println!(
-        "Wrote commit count shell to {}",
-        script_path.to_string_lossy()
-    );
-    Ok(())
 }
 
 #[cfg(test)]

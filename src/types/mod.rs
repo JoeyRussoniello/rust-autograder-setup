@@ -1,4 +1,4 @@
-mod command_makers;
+pub mod command_makers;
 
 use crate::utils::replace_double_hashtag;
 use command_makers::*;
