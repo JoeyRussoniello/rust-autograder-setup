@@ -243,7 +243,7 @@ Example:
 
 #### `build`
 
-Generates `.github/workflows/classroom.yaml` from `.autograder/autograder.json`, as well as any required commit counting shell scripts.
+Generates `.github/workflows/classroom.yaml` from `.autograder/autograder.json`, as well as the commit counting shell script if necessary.
 
 Options:
 
