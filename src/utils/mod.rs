@@ -101,7 +101,17 @@ pub fn slug_id(name: &str) -> String {
 
 // Quote for YAML (simple: double-quote and escape double quotes)
 pub fn yaml_quote(s: &str) -> String {
-    format!("\"{}\"", s.replace('"', "\\\""))
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    for ch in s.chars() {
+        match ch {
+            '\\' => out.push_str(r#"\\"#),
+            '"'  => out.push_str(r#"\""#),
+            _    => out.push(ch),
+        }
+    }
+    out.push('"');
+    out
 }
 
 pub fn replace_double_hashtag(s: &str, num_commits: u32) -> String {
