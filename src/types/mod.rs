@@ -68,7 +68,7 @@ impl AutoTest {
         }
     }
 
-    fn command(&self) -> String {
+    pub fn command(&self) -> String {
         match &self.kind {
             TestKind::CargoTest { manifest_path } => {
                 cargo_test_cmd(&self.meta.name, manifest_path.as_deref())

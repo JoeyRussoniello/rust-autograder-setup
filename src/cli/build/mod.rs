@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
-use crate::types::{AutoTest, StepCmd};
+use crate::types::{AutoTest, TestKind};
 use crate::utils::{
     YAML_INDENT, get_commit_count_file_name_from_str, read_autograder_config,
     replace_double_hashtag, slug_id, yaml_quote,
@@ -69,12 +69,12 @@ impl YAMLAutograder {
     }
 
     fn set_tests(&mut self, tests: Vec<AutoTest>) {
-        self.tests = tests.into_iter().filter(|t| t.points > 0).collect();
+        self.tests = tests.into_iter().filter(|t| t.meta.points > 0).collect();
         self.ids = Vec::with_capacity(self.tests.len());
     }
 
     fn compile_test_step(&mut self, test: &AutoTest, cmd: &str) {
-        let name = test.name.trim();
+        let name = test.meta.name.trim();
         let id = slug_id(name);
         let indent_level = 3;
         self.ids.push(id.clone());
@@ -100,8 +100,8 @@ impl YAMLAutograder {
                 yaml_quote(name),
                 yaml_quote(""),
                 yaml_quote(&full_command),
-                test.timeout,
-                test.points
+                test.meta.timeout,
+                test.meta.points
             ),
             indent_level + 2,
         );
@@ -112,46 +112,33 @@ impl YAMLAutograder {
         let tests = self.tests.clone();
 
         // Count the number of `cargo tests` present in each manifest path
-        let counts_by_manifest: HashMap<Option<String>, u32> = tests
-            .iter()
-            .map(infer_step_cmd)
-            .filter_map(|s| {
-                if let StepCmd::CargoTest { manifest_path, .. } = s {
-                    // manifest_path is already an Option<String>, just return it
-                    Some(manifest_path)
-                } else {
-                    None
-                }
-            })
-            .fold(HashMap::new(), |mut acc, path| {
-                *acc.entry(path).or_insert(0) += 1;
-                acc
-            });
+        let mut counts_by_manifest: HashMap<Option<String>, u32> = HashMap::new();
+        for t in &tests {
+            if let TestKind::CargoTest { manifest_path } = &t.kind {
+                *counts_by_manifest.entry(manifest_path.clone()).or_insert(0) += 1;
+            }
+        }
 
         for test in tests.iter() {
-            let step = infer_step_cmd(test);
-
-            match &step {
-                StepCmd::TestCount { .. } => {
-                    let base_command = step.command();
-                    let mp = &test.manifest_path;
+            match &test.kind {
+                TestKind::TestCount { manifest_path , ..} => {
+                    let base_command = test.command();
                     // ? Maybe revisit defaulting to zero
-                    let num_cargo_tests = counts_by_manifest.get(mp).unwrap_or(&0);
+                    let num_cargo_tests = counts_by_manifest.get(manifest_path).unwrap_or(&0);
                     self.compile_test_step(
                         test,
-                        &replace_double_hashtag(base_command, *num_cargo_tests),
+                        &replace_double_hashtag(&base_command, *num_cargo_tests),
                     )
-                }
-                StepCmd::CommitCount { min, name } => {
+                },
+                TestKind::CommitCount { min_commits } => {
                     write_commit_count_shell(
-                        &self.root,
-                        *min,
-                        &get_commit_count_file_name_from_str(name),
+                        &self.root, 
+                        *min_commits,
+                        &get_commit_count_file_name_from_str(&test.meta.name)
                     )?;
-
-                    self.compile_test_step(test, &step.command());
-                }
-                _ => self.compile_test_step(test, &step.command()),
+                    self.compile_test_step(test, &test.command());
+                },
+                _ => self.compile_test_step(test, &test.command()),
             }
             self.autograder_content.push('\n');
         }
@@ -195,37 +182,6 @@ impl YAMLAutograder {
         self.compile_test_steps()?;
         self.compile_test_reporter();
         Ok(self.autograder_content.to_string())
-    }
-}
-
-fn infer_step_cmd(test: &AutoTest) -> StepCmd {
-    let n = test.name.trim();
-    let manifest_path = test.manifest_path.clone();
-    // Style check
-    if n.to_ascii_lowercase().contains("clippy_style_check") {
-        return StepCmd::ClippyCheck { manifest_path };
-    }
-
-    // Commit count
-    if n.starts_with("COMMIT_COUNT") {
-        // Priority: explicit field > number in name > default
-        return StepCmd::CommitCount {
-            name: n.to_string(),
-            min: test.min_commits.unwrap(),
-        };
-    }
-
-    if n.starts_with("TEST_COUNT") {
-        return StepCmd::TestCount {
-            min: test.min_tests.unwrap(),
-            manifest_path,
-        };
-    }
-
-    // Default: cargo test by function name
-    StepCmd::CargoTest {
-        function_name: n.to_string(),
-        manifest_path,
     }
 }
 
