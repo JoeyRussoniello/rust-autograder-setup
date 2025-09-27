@@ -26,9 +26,9 @@ pub enum TestKind {
         #[serde(skip_serializing_if = "Option::is_none")]
         manifest_path: Option<String>
     },
-    CommitCount { min: u32},
+    CommitCount { min_commits: u32},
     TestCount {
-        min: u32,
+        min_tests: u32,
         #[serde(skip_serializing_if = "Option::is_none")]
         manifest_path: Option<String>,
     }
@@ -46,15 +46,20 @@ fn esc(s: &str) -> String {
     s.replace('\\', r"\\").replace('|', r"\|").replace('`', r"\`")
 }
 
+/// Shared writing pattern between commit count and test count
+fn mk_description(desc: &str, min: u32) -> String{
+    esc(&replace_double_hashtag(desc, min))
+}
 impl AutoTest{
     /// Fill tokens like {min_commits}, {min_tests}, {manifest_path}, {function}
     fn resolved_description(&self) -> String {
         match &self.kind {
-            TestKind::CommitCount { min} | TestKind::TestCount{min, ..}=> {
-                esc(&replace_double_hashtag(
-                    &self.meta.description, 
-                    *min))
+            TestKind::CommitCount { min_commits} => {
+                mk_description(&self.meta.description, *min_commits)
             },
+            TestKind::TestCount{min_tests, ..} => {
+                mk_description(&self.meta.description, *min_tests)
+            }
             _ => esc(&self.meta.description),
         }
     }
@@ -70,8 +75,8 @@ impl AutoTest{
             TestKind::CommitCount { .. } => {
                 commit_count_cmd(&self.meta.name)
             },
-            TestKind::TestCount { min, manifest_path} => {
-                test_count_cmd(*min, manifest_path.as_deref())
+            TestKind::TestCount { min_tests, manifest_path} => {
+                test_count_cmd(*min_tests, manifest_path.as_deref())
             }
         }
     }
