@@ -11,6 +11,9 @@ use syn::{Attribute, Expr, File, Item, ItemFn, Lit, Meta, visit::Visit};
 use crate::types::{AutoTest, TestKind, TestMeta};
 use crate::utils::{RustFile, to_rel_unix_path};
 
+#[cfg(test)]
+pub mod tests;
+
 //TODO: Replace Files with its own type
 pub fn find_all_tests(files: &[RustFile]) -> Result<Vec<TestWithManifest>> {
     let mut tests: Vec<TestWithManifest> = Vec::new();

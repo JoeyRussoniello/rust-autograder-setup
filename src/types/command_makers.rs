@@ -1,4 +1,5 @@
 // Helper functions for the `.command()` method on `AutoTest`
+use crate::utils::scripts::SCRIPT_NAMES;
 
 fn is_root_manifest(p: &str) -> bool {
     p.is_empty() || p == "Cargo.toml" || p == "."
@@ -40,5 +41,15 @@ pub fn test_count_cmd(min: u32, mp: Option<&str>) -> String {
 }
 
 pub fn commit_count_cmd(min_commits: &u32) -> String {
-    format!("bash ./.autograder/commit_count.sh {}", min_commits,)
+    format!(
+        "bash ./.autograder/{} {}",
+        SCRIPT_NAMES.commit_count, min_commits,
+    )
+}
+
+pub fn branch_count_cmd(min_branches: &u32) -> String {
+    format!(
+        "bash ./.autograder/{} {}",
+        SCRIPT_NAMES.branch_count, min_branches,
+    )
 }
