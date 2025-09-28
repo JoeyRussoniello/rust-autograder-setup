@@ -23,7 +23,7 @@ fn clippy_autotest_for(manifest_path: &str, points: u32) -> AutoTest {
         manifest_path_opt = None;
     } else {
         name = format!("CLIPPY_STYLE_CHECK_{}", dir);
-        doc = format!("`cargo clippy style check for `{}`", dir);
+        doc = format!("`cargo clippy` style check for `{}`", dir);
         manifest_path_opt = Some(manifest_path.to_string());
     }
 
