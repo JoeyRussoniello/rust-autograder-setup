@@ -173,7 +173,7 @@ Options:
     --require-branches <REQUIRE_BRANCHES>...
         Require specific branch tresholds (e.g --require-branhes 2 4 6)
 
-        [default: 1]
+        [default: 0]
 
     --require-tests [<REQUIRE_TESTS>]
         Require a minimum number of tests (default: 0, set to 1 if flag is passed without a value)
@@ -510,3 +510,4 @@ autograder-setup reset
 
 - Additional CLI improvements and configuration options
 - Publish to `crates.io` for installation via `cargo install autograder-setup`
+
