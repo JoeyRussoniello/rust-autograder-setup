@@ -50,7 +50,7 @@ fn manifest_path_str(t: &AutoTest) -> Option<&str> {
         TestKind::CargoTest { manifest_path }
         | TestKind::Clippy { manifest_path }
         | TestKind::TestCount { manifest_path, .. } => manifest_path.as_deref(),
-        TestKind::CommitCount { .. } | TestKind::BranchCount{..}=> None,
+        TestKind::CommitCount { .. } | TestKind::BranchCount { .. } => None,
     }
 }
 
@@ -433,6 +433,7 @@ fn creates_commit_steps_from_require_commits() {
         Some(0), // deprecated flag ignored because require_commits present
         0,
         &vec![5, 10, 20],
+        &[],
     )
     .unwrap();
 
@@ -460,6 +461,7 @@ fn require_commits_overrides_num_commit_checks() {
         Some(4), // would expand to 1..=4, BUT must be ignored
         0,
         &vec![2, 8, 16], // precedence
+        &[],
     )
     .unwrap();
 
@@ -484,7 +486,8 @@ fn expands_num_commit_checks_when_require_commits_missing() {
         true,
         Some(3), // deprecated flag still supported → 1..=3
         0,
-        &vec![], // missing => use num_commit_checks
+        &[], // missing => use num_commit_checks
+        &[],
     )
     .unwrap();
 
@@ -510,6 +513,7 @@ fn does_not_create_commit_steps_if_disabled() {
         Some(99), // ignored
         0,
         &vec![1, 2, 3, 4, 5], // ignored
+        &[],
     )
     .unwrap();
 
@@ -609,7 +613,8 @@ fn test_count_member_uses_member_manifest_path_in_name() {
         false,
         Some(1),
         1, // require at least 1 test
-        &vec![],
+        &[],
+        &[],
     )
     .unwrap();
 
@@ -646,7 +651,8 @@ fn creates_single_test_count_step_for_root_when_required() {
         false,   // commit_counts
         Some(1), // ignored
         3,       // require_tests
-        &vec![],
+        &[],
+        &[],
     )
     .unwrap();
 
@@ -706,7 +712,8 @@ version = "0.1.0"
         false,   // commit_counts
         Some(3), // ignored
         5,       // require_tests
-        &vec![],
+        &[],
+        &[],
     )
     .unwrap();
 
@@ -771,7 +778,8 @@ fn does_not_create_test_count_steps_when_disabled() {
         true,    // commit_counts (unrelated)
         Some(2), // creates commit steps, but not test-count steps
         0,       // require_tests disabled
-        &vec![],
+        &[],
+        &[],
     )
     .unwrap();
 

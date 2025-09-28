@@ -79,6 +79,10 @@ pub struct InitArgs {
     #[arg(long = "require-commits", value_delimiter = ' ', num_args(1..), default_values_t = [1])]
     pub require_commits: Vec<u32>,
 
+    /// Require specific branch tresholds (e.g --require-branhes 2 4 6)
+    #[arg(long = "require-branches", value_delimiter = ' ', num_args(1..), default_values_t = [1])]
+    pub require_branches: Vec<u32>,
+
     /// Require a minimum number of tests (default: 0, set to 1 if flag is passed without a value)
     #[arg(long = "require-tests", default_value_t = 0, default_missing_value = "1", num_args(0..=1))]
     pub require_tests: u32,
@@ -136,6 +140,7 @@ pub fn run() -> Result<()> {
                 a.num_commit_checks,
                 a.require_tests,
                 &a.require_commits,
+                &a.require_branches,
             )
         }
         // Build has no args; default to current dir root like init would.

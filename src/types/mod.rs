@@ -81,7 +81,7 @@ impl AutoTest {
             TestKind::TestCount {
                 min_tests,
                 manifest_path,
-            } => test_count_cmd(*min_tests, manifest_path.as_deref()), 
+            } => test_count_cmd(*min_tests, manifest_path.as_deref()),
             TestKind::BranchCount { min_branches } => branch_count_cmd(min_branches),
         }
     }

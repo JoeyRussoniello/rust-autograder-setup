@@ -40,22 +40,45 @@ fn clippy_autotest_for(manifest_path: &str, points: u32) -> AutoTest {
     }
 }
 
-pub fn commit_count_autotests<I>(iterator: I, points: u32) -> Vec<AutoTest>
+/// A generic helper to create threshold-based autotests
+fn threshold_autotests<I>(
+    iterator: I,
+    points: u32,
+    prefix: &str,
+    mk_kind: impl Fn(u32) -> TestKind,
+) -> Vec<AutoTest>
 where
     I: Iterator<Item = u32>,
 {
     iterator
         .map(|i| AutoTest {
             meta: TestMeta {
-                name: format!("COMMIT_COUNT_{}", i),
+                name: format!("{}_{}", prefix, i),
                 timeout: 10,
                 points,
-                // ## Intentionally left to allow flexibility when reading autograder.json
-                description: "Ensures at least ## commits.".to_string(),
+                description: format!("Ensures at least {} {}.", i, prefix.to_lowercase()),
             },
-            kind: TestKind::CommitCount { min_commits: i },
+            kind: mk_kind(i),
         })
         .collect()
+}
+
+pub fn commit_count_autotests<I>(iterator: I, points: u32) -> Vec<AutoTest>
+where
+    I: Iterator<Item = u32>,
+{
+    threshold_autotests(iterator, points, "COMMIT_COUNT", |i| {
+        TestKind::CommitCount { min_commits: i }
+    })
+}
+
+pub fn branch_count_autotests<I>(iterator: I, points: u32) -> Vec<AutoTest>
+where
+    I: Iterator<Item = u32>,
+{
+    threshold_autotests(iterator, points, "BRANCH_COUNT", |i| {
+        TestKind::BranchCount { min_branches: i }
+    })
 }
 
 /// Count test cases per manifest path

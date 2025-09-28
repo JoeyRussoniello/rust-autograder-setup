@@ -3,7 +3,7 @@ use crate::utils::{collect_rs_files_with_manifest, ensure_exists, get_tests_dir}
 use anyhow::{Context, Result};
 use std::{fs, io::Write, path::Path};
 
-use functions::{clippy_autotests, commit_count_autotests, test_count_autotests};
+use functions::*;
 use scan::{TestWithManifest, find_all_tests};
 mod functions;
 mod scan;
@@ -21,6 +21,7 @@ pub fn run(
     num_commit_checks: Option<u32>, // DEPRECATED: present (Some) or absent (None)
     require_tests: u32,
     require_commits: &[u32], // New preferred thresholds
+    require_branches: &[u32],
 ) -> Result<()> {
     // ---- Discover tests ------------------------------------------------------
     let tests_dir = get_tests_dir(root, tests_dir_name);
@@ -58,7 +59,7 @@ pub fn run(
         items.extend(clippy_autotests(&manifest_paths, num_points));
     }
 
-    // ---- Commit counting logic ----------------------------------------------
+    // ---- Commit counting logic to uphold legacy ----------------------------------------------
     //
     // Precedence:
     //   1) If commit_counts=false, ignore both flags and emit nothing.
@@ -86,6 +87,13 @@ pub fn run(
         }
     }
 
+    // ---- Branch counting logic ----------------------------------------------
+    if !require_branches.is_empty() {
+        items.extend(branch_count_autotests(
+            require_branches.iter().copied(),
+            num_points,
+        ));
+    }
     // ---- Test count steps ----------------------------------------------------
     if require_tests > 0 {
         items.extend(test_count_autotests(

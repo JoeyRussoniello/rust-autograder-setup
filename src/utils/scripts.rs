@@ -3,7 +3,7 @@
 // Singelton struct to hold script names as constants
 pub struct ScriptNames {
     pub commit_count: &'static str,
-    pub branch_count: &'static str, 
+    pub branch_count: &'static str,
 }
 pub const SCRIPT_NAMES: ScriptNames = ScriptNames {
     commit_count: "commit_count.sh",
