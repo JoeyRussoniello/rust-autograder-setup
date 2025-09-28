@@ -40,8 +40,11 @@ fn clippy_autotest_for(manifest_path: &str, points: u32) -> AutoTest {
     }
 }
 
-pub fn commit_count_autotests(n: u32, points: u32) -> Vec<AutoTest> {
-    (1..=n)
+pub fn commit_count_autotests<I>(iterator: I, points: u32) -> Vec<AutoTest>
+where
+    I: Iterator<Item = u32>,
+{
+    iterator
         .map(|i| AutoTest {
             meta: TestMeta {
                 name: format!("COMMIT_COUNT_{}", i),

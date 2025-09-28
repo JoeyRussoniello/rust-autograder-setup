@@ -60,9 +60,24 @@ pub struct InitArgs {
     #[arg(long = "no-commit-count")]
     pub no_commit_count: bool,
 
-    /// Number of commit count checks (default: 1).
-    #[arg(long = "num-commit-checks", default_value_t = 1)]
-    pub num_commit_checks: u32,
+    /// DEPRECATED: use --require-commits instead. Kept for backward compatibility.
+    /// Hidden from short help, visible under a "DEPRECATED" heading in --help --help (optional).
+    #[arg(
+        long = "num-commit-checks",
+        // allow `--num-commit-checks` *or* `--num-commit-checks 4`
+        num_args(0..=1),
+        default_missing_value = "1",
+        value_parser = clap::value_parser!(u32),
+        hide_short_help = true,
+        help_heading = "DEPRECATED",
+        long_help = "DEPRECATED: Use --require-commits <N...> instead.\n\
+                     If provided without a value, defaults to 1."
+    )]
+    pub num_commit_checks: Option<u32>,
+
+    /// Require specific commit thresholds (e.g. --require-commits 5 10 15 20)
+    #[arg(long = "require-commits", value_delimiter = ' ', num_args(1..), default_values_t = [1])]
+    pub require_commits: Vec<u32>,
 
     /// Require a minimum number of tests (default: 0, set to 1 if flag is passed without a value)
     #[arg(long = "require-tests", default_value_t = 0, default_missing_value = "1", num_args(0..=1))]
@@ -120,6 +135,7 @@ pub fn run() -> Result<()> {
                 !a.no_commit_count,
                 a.num_commit_checks,
                 a.require_tests,
+                &a.require_commits,
             )
         }
         // Build has no args; default to current dir root like init would.

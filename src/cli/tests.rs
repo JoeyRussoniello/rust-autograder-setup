@@ -131,7 +131,7 @@ fn parse_init_all_related_flags_together() {
             assert_eq!(a.default_points, 3);
             assert!(a.no_style_check);
             assert!(a.no_commit_count);
-            assert_eq!(a.num_commit_checks, 7);
+            assert_eq!(a.num_commit_checks, Some(7));
             assert_eq!(a.require_tests, 2);
         }
         _ => panic!("expected init"),

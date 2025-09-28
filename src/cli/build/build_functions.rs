@@ -1,4 +1,3 @@
-use super::create_and_write;
 use anyhow::Result;
 use std::path::Path;
 /// Generates the YAML preamble for the GitHub Actions workflow file.
@@ -42,21 +41,15 @@ jobs:
     preamble
 }
 
-//TODO: refactor to write a single shell script that takes an input
-/// Write a shell script to check for a minimum number of commits.
-pub fn write_commit_count_shell(root: &Path, num_commits: u32, name: &str) -> Result<()> {
-    let script_path = root.join(".autograder").join(name);
-    // Shell script content
-    let script = format!(
-        r#"#!/usr/bin/env bash
-# tests/commit_count.sh
+const SCRIPT_CONTENTS: &str = r#"#!/usr/bin/env bash
+# .autograder/commit_count.sh
 set -euo pipefail
 
 # Usage:
-#   MIN=3 bash tests/commit_count.sh
-#   bash tests/commit_count.sh -m 3
+#   bash .autograder/commit_count.sh 3
+#   MIN=3 bash .autograder/commit_count.sh
 
-MIN={min}
+MIN="${1:-${MIN:-0}}"
 
 # Validate MIN
 if ! [[ "$MIN" =~ ^[0-9]+$ ]]; then
@@ -85,16 +78,18 @@ else
   echo "❌ Found $COUNT commits (min $MIN) — FAIL"
   exit 1
 fi
-"#,
-        min = num_commits
-    );
+"#;
+/// Write a single parameterized shell script to count commits in a git repository.
+pub fn write_commit_count_shell(root: &Path) -> Result<()> {
+    let script_path = root.join(".autograder").join("commit_count.sh");
 
-    // Write the file
-    create_and_write(&script_path, &script)?;
+    // Bail early if the script already exists
+    if script_path.exists() {
+        return Ok(());
+    }
 
-    println!(
-        "Wrote commit count shell to {}",
-        script_path.to_string_lossy()
-    );
+    std::fs::create_dir_all(script_path.parent().unwrap())?;
+    std::fs::write(&script_path, SCRIPT_CONTENTS)?;
+
     Ok(())
 }
