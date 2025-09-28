@@ -170,6 +170,11 @@ Options:
 
         [default: 1]
 
+    --require-branches <REQUIRE_BRANCHES>...
+        Require specific branch tresholds (e.g --require-branhes 2 4 6)
+
+        [default: 1]
+
     --require-tests [<REQUIRE_TESTS>]
         Require a minimum number of tests (default: 0, set to 1 if flag is passed without a value)
 
@@ -195,14 +200,18 @@ autograder-setup init --default-points 5
 autograder-setup init --no-style-check
 autograder-setup init --no-commit-count
 
-# Create multiple commit check steps for awarding partial credit
-autograder-setup init --num-commit-checks 3
-
 # Require at least 5 tests in the project
 autograder-setup init --require-tests 5
 
 # Require at least 1 test (shortcut: omit value)
 autograder-setup init --require-tests
+
+# Award 1 point for reaching 5 commits, a second for reaching 10, and a third for 20 
+autograder-setup init --require-commits 5 10 20
+
+# Award 1 point for reaching 10 and 20 commits,
+# and 1 point each for having 2 and 3 branches
+autograder-setup init --require-commits 10 20 --require-branches 2 3
 ```
 
 **Commit counting:**  

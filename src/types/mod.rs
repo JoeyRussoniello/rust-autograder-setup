@@ -47,8 +47,7 @@ pub struct AutoTest {
 
 // tiny esc to keep tables from breaking if  | or \ are used
 fn esc(s: &str) -> String {
-    s.replace('\\', r"\\")
-        .replace('|', r"\|")
+    s.replace('\\', r"\\").replace('|', r"\|")
 }
 
 /// Shared writing pattern between commit count and test count
