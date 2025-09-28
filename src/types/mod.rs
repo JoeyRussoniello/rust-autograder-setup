@@ -33,6 +33,9 @@ pub enum TestKind {
         #[serde(skip_serializing_if = "Option::is_none")]
         manifest_path: Option<String>,
     },
+    BranchCount {
+        min_branches: u32,
+    },
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -78,7 +81,8 @@ impl AutoTest {
             TestKind::TestCount {
                 min_tests,
                 manifest_path,
-            } => test_count_cmd(*min_tests, manifest_path.as_deref()),
+            } => test_count_cmd(*min_tests, manifest_path.as_deref()), 
+            TestKind::BranchCount { min_branches } => branch_count_cmd(min_branches),
         }
     }
 }

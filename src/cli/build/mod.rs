@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use crate::types::{AutoTest, TestKind};
 use crate::utils::{read_autograder_config, replace_double_hashtag, slug_id};
 
-use build_functions::{get_yaml_preamble, write_commit_count_shell};
+use build_functions::{get_yaml_preamble, write_commit_count_shell, write_branch_count_shell};
 use std::collections::{BTreeMap, HashMap};
 use std::fs::{File, create_dir_all};
 use steps::{CommandStep, CommandWith, ReporterStep};
@@ -116,6 +116,10 @@ impl YAMLAutograder {
                 }
                 TestKind::CommitCount { .. } => {
                     write_commit_count_shell(&self.root)?;
+                    self.compile_test_step(test, &test.command());
+                },
+                TestKind::BranchCount { .. } => {
+                    write_branch_count_shell(&self.root)?;
                     self.compile_test_step(test, &test.command());
                 }
                 _ => self.compile_test_step(test, &test.command()),

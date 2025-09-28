@@ -1,5 +1,15 @@
 // Contents of utility bash scripts.
 
+// Singelton struct to hold script names as constants
+pub struct ScriptNames {
+    pub commit_count: &'static str,
+    pub branch_count: &'static str, 
+}
+pub const SCRIPT_NAMES: ScriptNames = ScriptNames {
+    commit_count: "commit_count.sh",
+    branch_count: "branch_count.sh",
+};
+
 // A shell script that ensures at least `n` commits exist in the git history
 pub const COMMIT_COUNT_SCRIPT_CONTENTS: &str = r#"#!/usr/bin/env bash
 # .autograder/commit_count.sh

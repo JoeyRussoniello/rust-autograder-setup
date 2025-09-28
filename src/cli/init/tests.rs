@@ -50,7 +50,7 @@ fn manifest_path_str(t: &AutoTest) -> Option<&str> {
         TestKind::CargoTest { manifest_path }
         | TestKind::Clippy { manifest_path }
         | TestKind::TestCount { manifest_path, .. } => manifest_path.as_deref(),
-        TestKind::CommitCount { .. } => None,
+        TestKind::CommitCount { .. } | TestKind::BranchCount{..}=> None,
     }
 }
 
