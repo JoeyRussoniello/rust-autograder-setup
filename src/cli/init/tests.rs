@@ -6,35 +6,33 @@ use std::fs;
 use std::path::PathBuf;
 use tempfile::tempdir;
 
-/// Helper function for test cases
+/// ------------------- Small helpers -------------------
+
 fn extract_test_names(src: &str) -> Vec<String> {
     extract_tests(src)
         .expect("Error parsing file")
-        .iter()
-        .map(|t| t.name.clone())
+        .into_iter()
+        .map(|t| t.name)
         .collect()
 }
 
-fn sorted(names: Vec<String>) -> Vec<String> {
-    let mut v = names.clone();
-    v.sort();
-    v
+fn sorted(mut names: Vec<String>) -> Vec<String> {
+    names.sort();
+    names
 }
 
-/// -------------------Helper for extracting fields from AutoTest------------------
 fn is_test_count(t: &AutoTest) -> bool {
     matches!(t.kind, TestKind::TestCount { .. })
 }
-
 fn is_commit_count(t: &AutoTest) -> bool {
     matches!(t.kind, TestKind::CommitCount { .. })
 }
-/// Filter TEST_COUNT steps (by variant, not by name)
 fn test_count_steps<'a>(items: &'a [AutoTest]) -> Vec<&'a AutoTest> {
     items.iter().filter(|t| is_test_count(t)).collect()
 }
-
-/// Pull out fields asserted on frequently
+fn commit_count_steps<'a>(items: &'a [AutoTest]) -> Vec<&'a AutoTest> {
+    items.iter().filter(|t| is_commit_count(t)).collect()
+}
 fn min_commits(t: &AutoTest) -> Option<u32> {
     match t.kind {
         TestKind::CommitCount { min_commits } => Some(min_commits),
@@ -55,6 +53,18 @@ fn manifest_path_str(t: &AutoTest) -> Option<&str> {
         TestKind::CommitCount { .. } => None,
     }
 }
+
+fn by_name<'a>(tests: &'a [Test], name: &str) -> &'a Test {
+    tests.iter().find(|t| t.name == name).unwrap_or_else(|| {
+        panic!(
+            "test `{}` not found in {:?}",
+            name,
+            tests.iter().map(|t| &t.name).collect::<Vec<_>>()
+        )
+    })
+}
+
+/// ------------------- test discovery -------------------
 
 #[test]
 fn finds_plain_test() {
@@ -138,8 +148,7 @@ fn recurses_inline_modules_but_not_out_of_line() {
             }
         }
 
-        // Out-of-line module (we do not open the file here)
-        mod helpers;
+        mod helpers; // out-of-line
 
         #[test]
         fn top_level() {}
@@ -254,15 +263,7 @@ fn many_in_one_file() {
     );
 }
 
-fn by_name<'a>(tests: &'a [Test], name: &str) -> &'a Test {
-    tests.iter().find(|t| t.name == name).unwrap_or_else(|| {
-        panic!(
-            "test `{}` not found in {:?}",
-            name,
-            tests.iter().map(|t| &t.name).collect::<Vec<_>>()
-        )
-    })
-}
+/// ------------------- docstring extraction -------------------
 
 #[test]
 fn single_line_doc_on_plain_test() {
@@ -307,8 +308,6 @@ fn block_doc_comment_preserved() {
     let tests = extract_tests(src).expect("Error parsing file");
     let t = &tests[0];
 
-    // Rust translates block doc comments to multiple #[doc="..."] lines.
-    // Leading asterisks/spaces are normalized by the lexer; expect lines joined by '\n'.
     assert_eq!(t.name, "blocky");
     assert!(t.docstring.contains("line one"));
     assert!(t.docstring.contains("line two"));
@@ -366,7 +365,6 @@ fn preserves_order_and_newlines_exactly() {
 
     let tests = extract_tests(src).expect("Error parsing file");
     let t = by_name(&tests, "spaced");
-    // Blank /// line becomes an empty #[doc=""] → yields a lone '\n' between alpha and gamma.
     assert!(t.docstring.contains("alpha"));
     assert!(t.docstring.contains("gamma"));
     assert!(t.docstring.contains("\n\n"));
@@ -415,33 +413,39 @@ fn doc_attribute_form_is_supported() {
     assert_eq!(t.docstring, "first\nsecond");
 }
 
+/// ------------------- commit-count config generation -------------------
+
 #[test]
-fn creates_single_commit_count_step_by_default() {
+fn creates_commit_steps_from_require_commits() {
     let dir = tempdir().unwrap();
     let src_dir = dir.path().join("src");
     fs::create_dir(&src_dir).unwrap();
     fs::write(src_dir.join("lib.rs"), "#[test] fn a() {}").unwrap();
 
+    // run(root, tests_dir, default_points, style_check, commit_counts,
+    //     num_commit_checks, require_tests, require_commits)
     super::run(
         dir.path(),
         &src_dir,
         1,
-        false, // style_check
-        true,  // commit_counts
-        1,     // num_commit_checks
+        false,
+        true,    // commit_counts enabled
+        Some(0), // deprecated flag ignored because require_commits present
         0,
+        &vec![5, 10, 20],
     )
     .unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
-    let commit_steps: Vec<_> = items.iter().filter(|t| is_commit_count(t)).collect();
+    let steps = commit_count_steps(&items);
+    assert_eq!(steps.len(), 3);
 
-    assert_eq!(commit_steps.len(), 1);
-    assert_eq!(min_commits(commit_steps[0]), Some(1));
+    let mins: Vec<u32> = steps.iter().map(|s| min_commits(s).unwrap()).collect();
+    assert_eq!(mins, vec![5, 10, 20]);
 }
 
 #[test]
-fn creates_multiple_commit_count_steps() {
+fn require_commits_overrides_num_commit_checks() {
     let dir = tempdir().unwrap();
     let src_dir = dir.path().join("src");
     fs::create_dir(&src_dir).unwrap();
@@ -452,24 +456,21 @@ fn creates_multiple_commit_count_steps() {
         &src_dir,
         1,
         false,
-        true, // commit_counts
-        3,    // num_commit_checks
+        true,
+        Some(4), // would expand to 1..=4, BUT must be ignored
         0,
+        &vec![2, 8, 16], // precedence
     )
     .unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
-    let commit_steps: Vec<_> = items.iter().filter(|t| is_commit_count(t)).collect();
-    assert_eq!(commit_steps.len(), 3);
-
-    for (i, step) in commit_steps.iter().enumerate() {
-        assert_eq!(step.meta.name, format!("COMMIT_COUNT_{}", i + 1));
-        assert_eq!(min_commits(step), Some((i + 1) as u32));
-    }
+    let steps = commit_count_steps(&items);
+    let mins: Vec<u32> = steps.iter().map(|s| min_commits(s).unwrap()).collect();
+    assert_eq!(mins, vec![2, 8, 16]);
 }
 
 #[test]
-fn does_not_create_commit_count_steps_if_disabled() {
+fn expands_num_commit_checks_when_require_commits_missing() {
     let dir = tempdir().unwrap();
     let src_dir = dir.path().join("src");
     fs::create_dir(&src_dir).unwrap();
@@ -479,17 +480,44 @@ fn does_not_create_commit_count_steps_if_disabled() {
         dir.path(),
         &src_dir,
         1,
-        false, // style_check
-        false, // commit_counts
-        5,     // ignored
+        false,
+        true,
+        Some(3), // deprecated flag still supported → 1..=3
         0,
+        &vec![], // missing => use num_commit_checks
     )
     .unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
-    let commit_steps: Vec<_> = items.iter().filter(|t| is_commit_count(t)).collect();
-    assert_eq!(commit_steps.len(), 0);
+    let steps = commit_count_steps(&items);
+    let mins: Vec<u32> = steps.iter().map(|s| min_commits(s).unwrap()).collect();
+    assert_eq!(mins, vec![1, 2, 3]);
 }
+
+#[test]
+fn does_not_create_commit_steps_if_disabled() {
+    let dir = tempdir().unwrap();
+    let src_dir = dir.path().join("src");
+    fs::create_dir(&src_dir).unwrap();
+    fs::write(src_dir.join("lib.rs"), "#[test] fn a() {}").unwrap();
+
+    super::run(
+        dir.path(),
+        &src_dir,
+        1,
+        false,    // style_check
+        false,    // commit_counts disabled
+        Some(99), // ignored
+        0,
+        &vec![1, 2, 3, 4, 5], // ignored
+    )
+    .unwrap();
+
+    let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
+    assert!(commit_count_steps(&items).is_empty());
+}
+
+/// ------------------- test-count config generation -------------------
 
 #[test]
 fn manifest_paths_are_distinct_and_relative() {
@@ -519,10 +547,9 @@ fn manifest_paths_are_distinct_and_relative() {
     let tests = vec![test1, test2, test3];
     let paths = TestWithManifest::get_distinct_manifest_paths(&tests, &root);
 
-    // Should contain "Cargo.toml", "sub/Cargo.toml"
     assert!(paths.contains("Cargo.toml"));
     assert!(paths.contains("sub/Cargo.toml"));
-    assert_eq!(paths.len(), 2); // Only two distinct paths
+    assert_eq!(paths.len(), 2);
 }
 
 #[test]
@@ -554,7 +581,6 @@ fn manifest_path_absolute_is_preserved() {
     };
     let tests = vec![test];
     let paths = TestWithManifest::get_distinct_manifest_paths(&tests, &root);
-    // Should contain the absolute path as a unix-style string
     assert!(paths.contains("/other/path/Cargo.toml"));
 }
 
@@ -562,7 +588,6 @@ fn manifest_path_absolute_is_preserved() {
 fn test_count_member_uses_member_manifest_path_in_name() {
     let dir = tempdir().unwrap();
 
-    // workspace + member
     fs::create_dir_all(dir.path().join("member/src")).unwrap();
     fs::write(
         dir.path().join("Cargo.toml"),
@@ -582,8 +607,9 @@ fn test_count_member_uses_member_manifest_path_in_name() {
         1,
         false,
         false,
-        1,
+        Some(1),
         1, // require at least 1 test
+        &vec![],
     )
     .unwrap();
 
@@ -615,11 +641,12 @@ fn creates_single_test_count_step_for_root_when_required() {
     super::run(
         dir.path(),
         dir.path(),
-        1,     // default points
-        false, // style_check
-        false, // commit_counts
-        1,     // ignored
-        3,     // require_tests
+        1,       // default points
+        false,   // style_check
+        false,   // commit_counts
+        Some(1), // ignored
+        3,       // require_tests
+        &vec![],
     )
     .unwrap();
 
@@ -638,8 +665,6 @@ fn creates_single_test_count_step_for_root_when_required() {
         manifest_path_str(s).is_none(),
         "root should not store manifest_path"
     );
-
-    // Description may be templated in config; compare the resolved form
     assert_eq!(s.resolved_description(), "Submission has at least 3 tests");
 }
 
@@ -676,11 +701,12 @@ version = "0.1.0"
     super::run(
         dir.path(),
         dir.path(),
-        2,     // default points
-        true,  // style_check (irrelevant here)
-        false, // commit_counts
-        3,     // ignored
-        5,     // require_tests
+        2,       // default points
+        true,    // style_check (irrelevant here)
+        false,   // commit_counts
+        Some(3), // ignored
+        5,       // require_tests
+        &vec![],
     )
     .unwrap();
 
@@ -741,16 +767,17 @@ fn does_not_create_test_count_steps_when_disabled() {
         dir.path(),
         dir.path(),
         1,
-        false, // style_check
-        true,  // commit_counts (unrelated)
-        2,     // creates commit steps, but not test-count steps
-        0,     // require_tests disabled
+        false,   // style_check
+        true,    // commit_counts (unrelated)
+        Some(2), // creates commit steps, but not test-count steps
+        0,       // require_tests disabled
+        &vec![],
     )
     .unwrap();
 
     let items = read_autograder_config(dir.path()).expect("Error Reading Autograder Config");
     assert!(
         test_count_steps(&items).is_empty(),
-        "no TEST_COUNT steps when require_tests == 0"
+        "no TEST_COUNT when require_tests == 0"
     );
 }
