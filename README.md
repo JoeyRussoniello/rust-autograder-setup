@@ -144,22 +144,39 @@ Scans `.` (recursively), finds test functions, and writes `.autograder/autograde
 Options:
 
 ```bash
-  -r, --root <ROOT>
-          Root of the Rust project (defaults to current directory) [default: .]
-  -t, --tests-dir <TESTS_DIR>
-          Location of all test cases (defaults to <root>) [default: .]
-      --default-points <DEFAULT_POINTS>
-          Default number of points per test [default: 1]
-      --no-style-check
-          Disable the Clippy style check (enabled by default)
-      --no-commit-count
-          Disable Commit Counting (enabled by default)
-      --num-commit-checks <NUM_COMMIT_CHECKS>
-          Number of commit count checks (default: 1) [default: 1]
-      --require-tests [<REQUIRE_TESTS>]
-          Require a minimum number of tests (default: 0, set to 1 if flag is passed without a value) [default: 0]
-  -h, --help
-          Print help
+-r, --root <ROOT>
+        Root of the Rust project (defaults to current directory)
+
+        [default: .]
+
+-t, --tests-dir <TESTS_DIR>
+        Location of all test cases (defaults to <root>)
+
+        [default: .]
+
+    --default-points <DEFAULT_POINTS>
+        Default number of points per test
+
+        [default: 1]
+
+    --no-style-check
+        Disable the Clippy style check (enabled by default)
+
+    --no-commit-count
+        Disable Commit Counting (enabled by default)
+
+    --require-commits <REQUIRE_COMMITS>...
+        Require specific commit thresholds (e.g. --require-commits 5 10 15 20)
+
+        [default: 1]
+
+    --require-tests [<REQUIRE_TESTS>]
+        Require a minimum number of tests (default: 0, set to 1 if flag is passed without a value)
+
+        [default: 0]
+
+-h, --help
+        Print help (see a summary with '-h')
 ```
 
 Examples:
@@ -188,15 +205,33 @@ autograder-setup init --require-tests 5
 autograder-setup init --require-tests
 ```
 
->Note: When commit counting is enabled, the generator creates separate checks for each threshold up to num-commit-checks.
-> For example, --num-commit-checks 3 would produce three independent checks:
+**Commit counting:**  
+By default, the generator creates a single commit check requiring **at least 1 commit**.  
+You can override this with `--require-commits` to specify one or more thresholds:
+//
+
+```bash
+--require-commits 5 10 15
+```
+
+produces three independent checks:
+
+- ✅ 1 point for reaching 5 commits  
+- ✅ 1 point for reaching 10 commits  
+- ✅ 1 point for reaching 15 commits
+
+This makes it easy to award **partial credit** as students commit more frequently.  
+Each threshold can also be fine-tuned directly in `.autograder/autograder.json`.
+
+> **Deprecated:** The old `--num-commit-checks N` option is still accepted, and expands to thresholds `1..=N`.  
+>For example:
 >
-> - 1 point for reaching 1 commits
-> - 1 point for reaching 2 commits
-> - 1 point for reaching 3 commits
+>```bash
+>--num-commit-checks 3
+>```
 >
-> The number of commits required to earn a point can be tweaked in `autograder.json`
-> This lets you award partial credit as students make more commits.
+>is equivalent to `--require-commits 1 2 3`.  
+>Please migrate to `--require-commits`, which offers clearer and more flexible control.
 
 ##### JSON Output
 
