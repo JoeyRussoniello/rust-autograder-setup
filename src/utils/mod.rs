@@ -4,6 +4,8 @@ use std::fs;
 use std::io::BufReader;
 use std::path::{Path, PathBuf};
 
+pub mod scripts;
+
 //pub static DEFAULT_POINTS: u32 = 1;
 
 pub const YAML_INDENT: &str = "  ";
