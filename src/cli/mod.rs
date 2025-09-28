@@ -80,7 +80,7 @@ pub struct InitArgs {
     pub require_commits: Vec<u32>,
 
     /// Require specific branch tresholds (e.g --require-branhes 2 4 6)
-    #[arg(long = "require-branches", value_delimiter = ' ', num_args(1..), default_values_t = [1])]
+    #[arg(long = "require-branches", value_delimiter = ' ', num_args(1..), default_values_t = Vec::<u32>::new())]
     pub require_branches: Vec<u32>,
 
     /// Require a minimum number of tests (default: 0, set to 1 if flag is passed without a value)

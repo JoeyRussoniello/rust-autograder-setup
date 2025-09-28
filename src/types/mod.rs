@@ -45,11 +45,10 @@ pub struct AutoTest {
     pub kind: TestKind,
 }
 
-// tiny esc to keep tables from breaking if  | or ` are used
+// tiny esc to keep tables from breaking if  | or \ are used
 fn esc(s: &str) -> String {
     s.replace('\\', r"\\")
         .replace('|', r"\|")
-        .replace('`', r"\`")
 }
 
 /// Shared writing pattern between commit count and test count
