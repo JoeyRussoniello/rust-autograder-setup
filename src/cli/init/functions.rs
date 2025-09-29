@@ -45,6 +45,7 @@ fn threshold_autotests<I>(
     iterator: I,
     points: u32,
     prefix: &str,
+    description: &str, 
     mk_kind: impl Fn(u32) -> TestKind,
 ) -> Vec<AutoTest>
 where
@@ -56,7 +57,7 @@ where
                 name: format!("{}_{}", prefix, i),
                 timeout: 10,
                 points,
-                description: format!("Ensures at least {} {}.", i, prefix.to_lowercase()),
+                description: format!("Ensures at least {} {}.", i, description),
             },
             kind: mk_kind(i),
         })
@@ -67,7 +68,7 @@ pub fn commit_count_autotests<I>(iterator: I, points: u32) -> Vec<AutoTest>
 where
     I: Iterator<Item = u32>,
 {
-    threshold_autotests(iterator, points, "COMMIT_COUNT", |i| {
+    threshold_autotests(iterator, points, "COMMIT_COUNT", "commits", |i| {
         TestKind::CommitCount { min_commits: i }
     })
 }
@@ -76,7 +77,7 @@ pub fn branch_count_autotests<I>(iterator: I, points: u32) -> Vec<AutoTest>
 where
     I: Iterator<Item = u32>,
 {
-    threshold_autotests(iterator, points, "BRANCH_COUNT", |i| {
+    threshold_autotests(iterator, points, "BRANCH_COUNT", "branches", |i| {
         TestKind::BranchCount { min_branches: i }
     })
 }
