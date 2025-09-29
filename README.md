@@ -13,7 +13,7 @@ A tiny Rust CLI that bootstraps **GitHub Classroom autograding for Rust projects
 
 > 🚀 Currently deployed in Boston University’s *Intro to Rust* course (130+ students, 1000+ student repos).
 
-## ✨ Key Features
+## Key Features
 
 - ⚡ **Fast setup** — go from repo → Classroom-ready assignment in under 60 seconds.  
 - 📝 **Flexible outputs** — grading tables copied to clipboard *or* written directly to your README.  
