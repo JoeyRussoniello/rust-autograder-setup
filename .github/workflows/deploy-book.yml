@@ -10,24 +10,17 @@ on:
 permissions:
     contents: write
 
-concurrency:
-    group: deploy-mdbook
-    cancel-in-progress: false
-
 jobs:
     build-deploy:
         runs-on: ubuntu-latest
-
         steps:
             - name: Checkout
               uses: actions/checkout@v4
 
-            - name: Install mdBook
-              run: |
-                  curl -L https://github.com/rust-lang/mdBook/releases/latest/download/mdbook-x86_64-unknown-linux-gnu.tar.gz \
-                    | tar xz
-                  echo "$PWD" >> "$GITHUB_PATH"
-                  mdbook --version
+            - name: Setup mdBook
+              uses: peaceiris/actions-mdbook@v2
+              with:
+                  mdbook-version: "latest" # or a pinned version like '0.4.52'
 
             - name: Build book
               working-directory: docs-book
@@ -38,7 +31,3 @@ jobs:
               with:
                   github_token: ${{ secrets.GITHUB_TOKEN }}
                   publish_dir: docs-book/book
-                  # optional: keep history of gh-pages
-                  keep_files: false
-                  # optional: specify cname if you use a custom domain
-                  # cname: docs.example.com
