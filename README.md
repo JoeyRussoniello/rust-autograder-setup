@@ -167,4 +167,3 @@ For a full CLI guide and usage instructions, see the [Complete Documentation](ht
 ## Upcoming Features
 
 - Additional CLI improvements and configuration options
-
