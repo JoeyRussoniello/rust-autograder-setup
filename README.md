@@ -2,11 +2,11 @@
 
 <div align="center">
 
-[![Latest release](https://img.shields.io/github/v/release/JoeyRussoniello/rust-autograder-setup?display_name=tag&sort=semver)](https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest)&nbsp;&nbsp;
-[![Downloads](https://img.shields.io/github/downloads/JoeyRussoniello/rust-autograder-setup/total)](https://github.com/JoeyRussoniello/rust-autograder-setup/releases)&nbsp;&nbsp;
-[![Release status](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yaml/badge.svg)](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yaml)&nbsp;&nbsp;
-[![Build](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/ci.yaml/badge.svg)](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/ci.yaml)&nbsp;&nbsp;
-[![Docs](https://img.shields.io/badge/docs-mdBook-blue)](https://joeyrussoniello.github.io/rust-autograder-setup/)
+[![Latest release](https:img.shields.io/github/v/release/JoeyRussoniello/rust-autograder-setup?display_name=tag&sort=semver)](https:github.com/JoeyRussoniello/rust-autograder-setup/releases/latest)&nbsp;&nbsp;
+[![Downloads](https:img.shields.io/github/downloads/JoeyRussoniello/rust-autograder-setup/total)](https:github.com/JoeyRussoniello/rust-autograder-setup/releases)&nbsp;&nbsp;
+[![Release status](https:github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yaml/badge.svg)](https:github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yaml)&nbsp;&nbsp;
+[![Build](https:github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/ci.yaml/badge.svg)](https:github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/ci.yaml)&nbsp;&nbsp;
+[![Docs](https:img.shields.io/badge/docs-mdBook-blue)](https:joeyrussoniello.github.io/rust-autograder-setup/)
 
 </div>
 
@@ -45,57 +45,39 @@ Keeps autograding setup **simple for instructors** while making grading criteria
 
 ## 📦 Releases
 
-- **Latest:** [https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest](https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest)
-- **All releases:** [https://github.com/JoeyRussoniello/rust-autograder-setup/releases](https://github.com/JoeyRussoniello/rust-autograder-setup/releases)
+- **Latest:** [https:github.com/JoeyRussoniello/rust-autograder-setup/releases/latest](https:github.com/JoeyRussoniello/rust-autograder-setup/releases/latest)
+- **All releases:** [https:github.com/JoeyRussoniello/rust-autograder-setup/releases](https:github.com/JoeyRussoniello/rust-autograder-setup/releases)
 
 ## Installation
 
-### Option A — Install from release (recommended)
+### Option A — Install via Cargo (recommended)
 
-#### macOS
+If you already have Rust installed:  
 
 ```bash
-# 1) Download the macOS asset from the latest release
-# 2) Extract and install:
-tar -xzf autograder-setup-vX.Y.Z-x86_64-apple-darwin.tar.gz
-sudo install -m 0755 autograder-setup-vX.Y.Z-x86_64-apple-darwin/autograder-setup /usr/local/bin/autograder-setup
+cargo install autograder-setup
+```
 
-# 3) Remove the Quarantine Attribute to disable MacOS Gatekeeper and code signing requirement.
-sudo xattr -r -d com.apple.quarantine /usr/local/bin/autograder-setup
+Check installation:
 
-# 4) Check that you can run it
+```bash
 autograder-setup --version
 ```
 
-#### Windows (PowerShell)
+---
 
-```powershell
-# 1) Download the Windows .zip from the latest release
-# 2) Extract and install:
-Expand-Archive autograder-setup-vX.Y.Z-x86_64-pc-windows-gnu.zip -DestinationPath .
+### Option B — Download a prebuilt binary
 
-$dir = Get-ChildItem -Directory "autograder-setup-v*-x86_64-pc-windows-gnu" | Select-Object -First 1
-$exe = Join-Path $dir.FullName "autograder-setup.exe"
+Precompiled binaries are available on the latest GitHub release:  
+<https:github.com/JoeyRussoniello/rust-autograder-setup/releases/latest>
 
-$UserBin = "$env:USERPROFILE\.local\bin"
-New-Item -ItemType Directory -Force -Path $UserBin | Out-Null
-Move-Item $exe "$UserBin\autograder-setup.exe" -Force
+| OS / Target                  | Archive  | Notes                                                   |
+|------------------------------|----------|---------------------------------------------------------|
+| macOS (x86_64-apple-darwin)  | `.tar.gz` | Extract and install to `/usr/local/bin`                 |
+| Windows (x86_64-pc-windows-gnu) | `.zip` | Extract and move `autograder-setup.exe` to your `PATH` |
 
-# Add to PATH for current session (optionally add permanently in System settings)
-$env:PATH = "$UserBin;$env:PATH"
-autograder-setup --version
-```
-
-### Option B - Build from source
-
-```bash
-git clone https://github.com/JoeyRussoniello/rust-autograder-setup
-cd rust-autograder-setup
-cargo build --release
-
-# binary at target/release/autograder-setup. Add to PATH, or migrate binary to the working
-# directory of the desired assignment
-```
+> See the docs for detailed OS-specific instructions:  
+> <https:joeyrussoniello.github.io/rust-autograder-setup/installation.html>
 
 ## Quickstart
 
@@ -124,7 +106,7 @@ autograder-setup reset --help
 
 ## Usage
 
-For a full CLI guide and usage instructions, see the [Complete Documentation](https://joeyrussoniello.github.io/rust-autograder-setup/)
+For a full CLI guide and usage instructions, see the [Complete Documentation](https:joeyrussoniello.github.io/rust-autograder-setup/)
 
 ## Repository Structure
 
@@ -185,4 +167,3 @@ For a full CLI guide and usage instructions, see the [Complete Documentation](ht
 ## Upcoming Features
 
 - Additional CLI improvements and configuration options
-- Publish to `crates.io` for installation via `cargo install autograder-setup`
