@@ -56,8 +56,15 @@ pub struct InitArgs {
     #[arg(long = "no-style-check")]
     pub no_style_check: bool,
 
-    /// Disable Commit Counting (enabled by default)
-    #[arg(long = "no-commit-count")]
+    /// DEPRECATED: --require-commits is no longer default. Kept for backward compatibility.
+    /// Hidden from short help, visible under a "DEPRECATED" heading in --help --help (optional)
+    #[arg(
+        long = "no-commit-count",
+        hide_short_help = true,
+        help_heading = "DEPRECATED",
+        long_help = "DEPRECATED: --require-commits is no longer default behavior. \n\
+                     This flag is not necessary."
+    )]
     pub no_commit_count: bool,
 
     /// DEPRECATED: use --require-commits instead. Kept for backward compatibility.
@@ -79,13 +86,13 @@ pub struct InitArgs {
     #[arg(long = "require-commits", value_delimiter = ' ', num_args(1..), default_values_t = [1])]
     pub require_commits: Vec<u32>,
 
-    /// Require specific branch tresholds (e.g --require-branhes 2 4 6)
+    /// Require specific branch tresholds (e.g --require-branches 2 4 6)
     #[arg(long = "require-branches", value_delimiter = ' ', num_args(1..), default_values_t = Vec::<u32>::new())]
     pub require_branches: Vec<u32>,
 
-    /// Require a minimum number of tests (default: 0, set to 1 if flag is passed without a value)
-    #[arg(long = "require-tests", default_value_t = 0, default_missing_value = "1", num_args(0..=1))]
-    pub require_tests: u32,
+    /// Require specific student-written test thresholds (e.g --require-tests 2 4 6)
+    #[arg(long = "require-tests", value_delimiter = ' ', num_args(1..), default_values_t = Vec::<u32>::new())]
+    pub require_tests: Vec<u32>,
 }
 
 #[derive(Debug, Clone)]
@@ -102,7 +109,7 @@ pub struct RunConfig {
     pub num_commit_checks: Option<u32>, // DEPRECATED
 
     // New preferred:
-    pub require_tests: u32,
+    pub require_tests: Vec<u32>,
     pub require_commits: Vec<u32>,
     pub require_branches: Vec<u32>,
 }
@@ -168,7 +175,7 @@ impl Default for RunConfig {
             style_check: false,
             commit_counts_flag: false,
             num_commit_checks: None,
-            require_tests: 0,
+            require_tests: Vec::new(),
             require_commits: Vec::new(),
             require_branches: Vec::new(),
         }

@@ -69,22 +69,10 @@ fn parse_init_require_tests_default_is_zero() {
     let cli = Cli::try_parse_from(["autograder-setup", "init"]).expect("parse ok");
     match cli.command {
         Command::Init(a) => {
-            assert_eq!(a.require_tests, 0, "default require-tests should be 0");
-        }
-        _ => panic!("expected init"),
-    }
-}
-
-#[test]
-fn parse_init_require_tests_with_no_value_is_one() {
-    // Requires: #[arg(default_missing_value = "1", num_args(0..=1))]
-    let cli =
-        Cli::try_parse_from(["autograder-setup", "init", "--require-tests"]).expect("parse ok");
-    match cli.command {
-        Command::Init(a) => {
             assert_eq!(
-                a.require_tests, 1,
-                "--require-tests (no value) should default to 1"
+                a.require_tests,
+                Vec::<u32>::new(),
+                "default require-tests should be empty"
             );
         }
         _ => panic!("expected init"),
@@ -98,7 +86,7 @@ fn parse_init_require_tests_with_explicit_value() {
 
     match cli.command {
         Command::Init(a) => {
-            assert_eq!(a.require_tests, 5);
+            assert_eq!(a.require_tests, vec![5]);
         }
         _ => panic!("expected init"),
     }
@@ -132,7 +120,7 @@ fn parse_init_all_related_flags_together() {
             assert!(a.no_style_check);
             assert!(a.no_commit_count);
             assert_eq!(a.num_commit_checks, Some(7));
-            assert_eq!(a.require_tests, 2);
+            assert_eq!(a.require_tests, vec![2]);
         }
         _ => panic!("expected init"),
     }
