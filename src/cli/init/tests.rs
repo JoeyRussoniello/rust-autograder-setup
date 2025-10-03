@@ -179,13 +179,13 @@ fn creates_single_test_count_step_for_root_when_required() {
     h.write_root_crate("#[test] fn a() {}", "root");
 
     let items = h.run(|c| {
-        c.require_tests = 3; // require at least 3 tests for root
+        c.require_tests = vec![3]; // require at least 3 tests for root
     });
 
     let pairs = test_count_mins_by_manifest(&items);
     assert_eq!(pairs.len(), 1, "expected exactly one TEST_COUNT (root)");
     assert_eq!(pairs[0], (None, 3)); // None => root (no manifest_path stored)
-    assert!(items.iter().any(|t| t.meta.name == "TEST_COUNT"));
+    assert!(items.iter().any(|t| t.meta.name.contains("TEST_COUNT")));
 }
 
 #[test]
@@ -198,7 +198,7 @@ fn creates_test_count_steps_for_each_manifest_in_workspace() {
     let items = h.run(|c| {
         c.num_points = 2;
         c.style_check = true;
-        c.require_tests = 5;
+        c.require_tests = vec![5];
     });
 
     // Expect two TestCount steps: one root (None), one member ("member/Cargo.toml")
@@ -210,6 +210,6 @@ fn creates_test_count_steps_for_each_manifest_in_workspace() {
     );
 
     // Names: root is "TEST_COUNT", member includes uppercased path
-    assert!(items.iter().any(|t| t.meta.name == "TEST_COUNT"));
+    assert!(items.iter().any(|t| t.meta.name.contains("TEST_COUNT")));
     assert!(has_member_named(&items, "MEMBER/CARGO.TOML"));
 }

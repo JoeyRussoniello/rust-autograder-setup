@@ -66,11 +66,11 @@ pub fn run(cfg: &RunConfig) -> Result<()> {
         ));
     }
     // ---- Test count steps ----------------------------------------------------
-    if cfg.require_tests > 0 {
+    if !cfg.require_tests.is_empty() {
         items.extend(test_count_autotests(
-            &manifest_paths,
+            cfg.require_tests.iter().copied(),
             cfg.num_points,
-            cfg.require_tests,
+            &manifest_paths,
         ));
     }
 
