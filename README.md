@@ -180,7 +180,7 @@ Options:
         [default: 1]
 
     --require-branches <REQUIRE_BRANCHES>...
-        Require specific branch tresholds (e.g --require-branhes 2 4 6)
+        Require specific branch tresholds (e.g --require-branches 2 4 6)
 
         [default: 0]
 
@@ -199,7 +199,7 @@ Examples:
 # Initialize an autograder.json in ../student-assignment/.autograder
 autograder-setup init --root ../student-assignment
 
-# Initialize an autograder.json by searching ./tests/ recursively
+# Reduce the scope of autograde test cases by only searching ./tests/ recursively
 autograder-setup init --tests-dir tests
 
 # Initialize autograder.json with 5 as the default amount of points instead of 1
@@ -519,4 +519,5 @@ autograder-setup reset
 
 - Additional CLI improvements and configuration options
 - Publish to `crates.io` for installation via `cargo install autograder-setup`
+
 
