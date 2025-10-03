@@ -2,6 +2,21 @@
 name = "autograder-setup"
 version = "2.2.1"
 edition = "2024"
+license = "MIT"
+license-file = "LICENSE"
+readme = "README.md"
+repository = "https://github.com/JoeyRussoniello/rust-autograder-setup"
+homepage = "https://joeyrussoniello.github.io/rust-autograder-setup/"
+description = "Rust CLI that generates GitHub Classroom autograder workflows for Rust assignments."
+keywords = ["education", "classroom", "autograder", "cli", "github-actions"]
+categories = ["command-line-utilities", "development-tools::build-utilities"]
+
+include = [
+  "Cargo.toml",
+  "LICENSE",
+  "README.md",
+  "src/**",
+]
 
 [dependencies]
 anyhow = "1.0"

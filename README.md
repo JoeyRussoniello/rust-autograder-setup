@@ -133,7 +133,23 @@ For a full CLI guide and usage instructions, see the [Complete Documentation](ht
 ├── Cargo.lock                           # Cargo dependency lockfile (generated; checked in for reproducible builds)
 ├── Cargo.toml                           # Crate metadata and dependencies
 ├── LICENSE                              # Project license
-├── README.md                            # Documentation and usage guide (this file)
+├── README.md                            # Basic installation and usage guide (this file)
+├── docs-book                            # Complete mdbook documentation
+│   ├── book.toml
+│   └── src
+│       ├── README.md
+│       ├── SUMMARY.md
+│       ├── commands
+│       │   ├── build.md
+│       │   ├── init.md
+│       │   ├── reset.md
+│       │   └── table.md
+│       ├── faq.md
+│       ├── installation.md
+│       ├── json-schema.md
+│       ├── quickstart.md
+│       ├── releases.md
+│       └── repository-structure.md
 └── src
     ├── cli                              # CLI subcommands and orchestration
     │   ├── build                        # `autograder-setup build` — render workflow YAML from autograder.json
@@ -144,8 +160,10 @@ For a full CLI guide and usage instructions, see the [Complete Documentation](ht
     │   ├── init                         # `autograder-setup init` — scan tests and write `.autograder/autograder.json`
     │   │   ├── functions.rs             # High-level constructors for AutoTests (clippy/commit count/test count)
     │   │   ├── mod.rs                   # Subcommand entry and pipeline glue
-    │   │   ├── scan.rs                  # Rust source scanner (finds #[test]/#[..::test], docs, manifests)
-    │   │   └── tests.rs                 # Parser/scan tests and manifest-path logic tests
+    │   │   ├── scan                     # Module for AST parsing and test case discovery
+    │   │   │   ├── mod.rs
+    │   │   │   └── tests.rs
+    │   │   └── tests.rs                 
     │   ├── mod.rs                       # Top-level CLI wiring (arg parsing, subcommand dispatch)
     │   ├── reset                        # `autograder-setup reset` — remove generated files
     │   │   ├── mod.rs                   # Subcommand entry
