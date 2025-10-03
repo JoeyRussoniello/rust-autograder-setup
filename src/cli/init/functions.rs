@@ -82,17 +82,31 @@ where
     })
 }
 
-/// Count test cases per manifest path
-pub fn test_count_autotests(
-    manifest_paths: &HashSet<String>,
+pub fn test_count_autotests<I>(
+    iterator: I,
     points: u32,
-    required_tests: u32,
-) -> Vec<AutoTest> {
-    manifest_paths
-        .iter()
-        .map(|mp| test_count_autotest_for(mp, points, required_tests))
-        .collect()
+    manifest_paths: &HashSet<String>,
+) -> Vec<AutoTest>
+where
+    I: Iterator<Item = u32>,
+{
+    // Collect required test thresholds so we can iterate them multiple times.
+    let required: Vec<u32> = iterator.collect();
+
+    // Stable order for deterministic output: sort manifest paths.
+    let mut mps: Vec<String> = manifest_paths.iter().cloned().collect();
+    mps.sort();
+
+    let mut out = Vec::new();
+    for mp in mps {
+        for req in &required {
+            out.push(test_count_autotest_for(&mp, points, *req));
+        }
+    }
+    out
 }
+
+/// Likely needs to be refactored for iterator based solution
 fn test_count_autotest_for(manifest_path: &str, points: u32, required_tests: u32) -> AutoTest {
     let dir = manifest_dir_label(manifest_path);
 
@@ -100,14 +114,19 @@ fn test_count_autotest_for(manifest_path: &str, points: u32, required_tests: u32
     let docstring: String;
     let manifest_path_opt: Option<String>;
 
+    // THis can go in a function
     if matches!(dir.as_str(), "." | "Cargo.toml") {
         docstring = format!("Submission has at least {} tests", required_tests);
         manifest_path_opt = None;
-        name = "TEST_COUNT".to_string();
+        name = format!("TEST_COUNT_{}", required_tests);
     } else {
         docstring = format!("{} submission has at least {} tests", dir, required_tests);
         manifest_path_opt = Some(manifest_path.to_string());
-        name = format!("TEST_COUNT_{}", manifest_path.to_uppercase());
+        name = format!(
+            "TEST_COUNT_{}_{}",
+            manifest_path.to_uppercase(),
+            required_tests
+        );
     }
 
     AutoTest {
