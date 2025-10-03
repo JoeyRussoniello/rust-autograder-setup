@@ -2,11 +2,11 @@
 
 <div align="center">
 
-[![Latest release](https:img.shields.io/github/v/release/JoeyRussoniello/rust-autograder-setup?display_name=tag&sort=semver)](https:github.com/JoeyRussoniello/rust-autograder-setup/releases/latest)&nbsp;&nbsp;
-[![Downloads](https:img.shields.io/github/downloads/JoeyRussoniello/rust-autograder-setup/total)](https:github.com/JoeyRussoniello/rust-autograder-setup/releases)&nbsp;&nbsp;
-[![Release status](https:github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yaml/badge.svg)](https:github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yaml)&nbsp;&nbsp;
-[![Build](https:github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/ci.yaml/badge.svg)](https:github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/ci.yaml)&nbsp;&nbsp;
-[![Docs](https:img.shields.io/badge/docs-mdBook-blue)](https:joeyrussoniello.github.io/rust-autograder-setup/)
+[![Latest release](https://img.shields.io/github/v/release/JoeyRussoniello/rust-autograder-setup?display_name=tag&sort=semver)](https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest)&nbsp;&nbsp;
+[![Downloads](https://img.shields.io/github/downloads/JoeyRussoniello/rust-autograder-setup/total)](https://github.com/JoeyRussoniello/rust-autograder-setup/releases)&nbsp;&nbsp;
+[![Release status](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yaml/badge.svg)](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yaml)&nbsp;&nbsp;
+[![Build](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/ci.yaml/badge.svg)](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/ci.yaml)&nbsp;&nbsp;
+[![Docs](https://img.shields.io/badge/docs-mdBook-blue)](https://joeyrussoniello.github.io/rust-autograder-setup/)
 
 </div>
 
@@ -167,3 +167,4 @@ For a full CLI guide and usage instructions, see the [Complete Documentation](ht
 ## Upcoming Features
 
 - Additional CLI improvements and configuration options
+
