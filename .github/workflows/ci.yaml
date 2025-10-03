@@ -2,10 +2,12 @@ name: 🧪 CI
 
 on:
   push:
+    paths:
+      # Only run CI when src/ is changed (ignore readme/docs changes)
+      - "src/**"
   pull_request:
     branches: [main]
     paths:
-      # Only run CI when src/ is changed (ignore readme/docs changes)
       - "src/**"
 
 # Keep perms minimal for CI
