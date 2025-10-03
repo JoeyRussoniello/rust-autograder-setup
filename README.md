@@ -5,7 +5,8 @@
 [![Latest release](https://img.shields.io/github/v/release/JoeyRussoniello/rust-autograder-setup?display_name=tag&sort=semver)](https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest)&nbsp;&nbsp;
 [![Downloads](https://img.shields.io/github/downloads/JoeyRussoniello/rust-autograder-setup/total)](https://github.com/JoeyRussoniello/rust-autograder-setup/releases)&nbsp;&nbsp;
 [![Release status](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yaml/badge.svg)](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/release.yaml)&nbsp;&nbsp;
-[![Build](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/ci.yaml/badge.svg)](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/ci.yaml)
+[![Build](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/ci.yaml/badge.svg)](https://github.com/JoeyRussoniello/rust-autograder-setup/actions/workflows/ci.yaml)&nbsp;&nbsp;
+[![Docs](https://img.shields.io/badge/docs-mdBook-blue)](https://joeyrussoniello.github.io/rust-autograder-setup/)
 
 </div>
 
@@ -34,19 +35,9 @@ Keeps autograding setup **simple for instructors** while making grading criteria
 ## Table of Contents
 
 - [Releases](#-releases)
-  - [Prebuilt binaries](#prebuilt-binaries)
 - [Installation](#installation)
-  - [Option A — Install from release](#option-a--install-from-release-recommended)
-    - [macOS](#macos)
-    - [Windows (PowerShell)](#windows-powershell)
-  - [Option B — Build from source](#option-b---build-from-source)
+- [Quickstart](#quickstart)
 - [Usage](#usage)
-  - [Quickstart](#quickstart)
-  - [Command Reference](#command-reference)
-    - [init](#init)
-    - [build](#build)
-    - [table](#table)
-    - [reset](#reset)
 - [Repository Structure](#repository-structure)
 - [Upcoming Features](#upcoming-features)
 
@@ -56,17 +47,6 @@ Keeps autograding setup **simple for instructors** while making grading criteria
 
 - **Latest:** [https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest](https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest)
 - **All releases:** [https://github.com/JoeyRussoniello/rust-autograder-setup/releases](https://github.com/JoeyRussoniello/rust-autograder-setup/releases)
-
-### Prebuilt binaries
-
-| OS / Target | Download |
-|---|---|
-| macOS (x86_64-apple-darwin) | See **Assets** on the [latest release](https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest) |
-| Windows (x86_64-pc-windows-gnu) | See **Assets** on the [latest release](https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest) |
-
-> Assets are named: `autograder-setup-vX.Y.Z-<target>.tar.gz` (macOS) or `.zip` (Windows).
-
----
 
 ## Installation
 
@@ -117,15 +97,13 @@ cargo build --release
 # directory of the desired assignment
 ```
 
-## Usage
-
-### Quickstart
+## Quickstart
 
 ```bash
 # Show top-level help
 autograder-setup --help
 
-# 1) Scan src/ recursively and create tests/autograder.json
+# 1) Scan src/ recursively and create .autograder/autograder.json
 autograder-setup init
 
 # 2) (Optional) Edit tests/autograder.json to adjust points/timeouts
@@ -135,7 +113,7 @@ autograder-setup build
 # -> .github/workflows/classroom.yaml
 ```
 
-To see flags for a specific command:
+For command-specific flags:
 
 ```bash
 autograder-setup init --help
@@ -472,10 +450,7 @@ Options
 
 Example
 
-```bash
-# Undo all setup done by the autograder-setup file
-autograder-setup reset
-```
+For usage instructions see the complete documentation
 
 ## Repository Structure
 

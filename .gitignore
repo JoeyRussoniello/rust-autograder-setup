@@ -4,3 +4,4 @@
 .github/workflows/classroom.yml
 /.autograder
 testRoots/
+docs-book/book

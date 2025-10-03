@@ -1,0 +1,19 @@
+[book]
+title = "Rust Autograder Setup"
+authors = ["Joey Russoniello"]
+description = "Documentation for the autograder-setup CLI for GitHub Classroom with Rust"
+language = "en"
+src = "src"
+
+[build]
+create-missing = true
+
+[output.html]
+default-theme = "ayu"
+site-url = "/rust-autograder-setup/"
+git-repository-url = "https://github.com/JoeyRussoniello/rust-autograder-setup"
+# git-repository-icon = "fa-github" 
+additional-css = []
+
+[output.html.playground]
+editable = false
