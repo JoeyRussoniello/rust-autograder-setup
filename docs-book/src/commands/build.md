@@ -5,9 +5,12 @@ Generates `.github/workflows/classroom.yaml` from `.autograder/autograder.json` 
 ## Options
 
 ```bash
--r, --root <ROOT>   Root of the Rust project [default: .]
-    --grade-on-push Run on push to any branch (default is only `repository_dispatch`)
--h, --help          Print help
+-r, --root <ROOT>
+        Root of the Rust project (defaults to current directory) [default: .]
+    --grade-on-push
+        Have autograder run on push to any branch (default: grade only on "Grade All" or `repository_dispatch`)
+-h, --help
+        Print help
 ```
 
 ## Examples

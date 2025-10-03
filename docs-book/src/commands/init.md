@@ -5,15 +5,37 @@ Scans the project (recursively), finds test functions, and writes `.autograder/a
 ## Options
 
 ```bash
--r, --root <ROOT>            Root of the Rust project [default: .]
--t, --tests-dir <TESTS_DIR>  Location of tests (defaults to <root>) [default: .]
-    --default-points <N>     Default points per test [default: 1]
-    --no-style-check         Disable the Clippy style check (enabled by default)
-    --no-commit-count        Disable Commit Counting (enabled by default)
-    --require-commits ...    Require specific commit thresholds (e.g. 5 10 15 20) [default: 1]
-    --require-branches ...   Require specific branch thresholds (e.g. 2 4 6) [default: 0]
-    --require-tests [N]      Require a minimum number of tests (default: 0; set to 1 if flag is passed without a value)
--h, --help                   Print help
+-r, --root <ROOT>
+        Root of the Rust project (defaults to current directory)
+
+        [default: .]
+
+-t, --tests-dir <TESTS_DIR>
+        Location of all test cases (defaults to <root>)
+
+        [default: .]
+
+    --default-points <DEFAULT_POINTS>
+        Default number of points per test
+
+        [default: 1]
+
+    --no-style-check
+        Disable the Clippy style check (enabled by default)
+
+    --require-commits <REQUIRE_COMMITS>...
+        Require specific commit thresholds (e.g. --require-commits 5 10 15 20)
+
+        [default: 1]
+
+    --require-branches <REQUIRE_BRANCHES>...
+        Require specific branch tresholds (e.g --require-branches 2 4 6)
+
+    --require-tests <REQUIRE_TESTS>...
+        Require specific student-written test thresholds (e.g --require-tests 2 4 6)
+
+-h, --help
+        Print help (see a summary with '-h')
 ```
 
 ## Examples
@@ -35,9 +57,6 @@ autograder-setup init --no-commit-count
 # Require at least 5 tests
 autograder-setup init --require-tests 5
 
-# Shortcut: require at least 1 test
-autograder-setup init --require-tests
-
 # Award 1 point for reaching 5, 10, and 20 commits
 autograder-setup init --require-commits 5 10 20
 
@@ -45,21 +64,38 @@ autograder-setup init --require-commits 5 10 20
 autograder-setup init --require-commits 10 20 --require-branches 2 3
 ```
 
-## Commit counting
+## Counting checks (commits, branches, tests)
 
-By default, the generator creates a single commit check requiring **at least 1 commit**.  
-Override with `--require-commits` to specify multiple thresholds:
+The `init` command can emit simple threshold checks that award 1 point each when a submission meets a given threshold. The three related flags behave the same way: each value supplied becomes an independent 1‑point check.
+
+- `--require-commits <N>...`
+  - Each value produces a check that the submission has at least N commits.
+  - Example: `--require-commits 5 10 20` → three checks (5, 10, 20 commits).
+
+- `--require-branches <N>...`
+  - Each value produces a check that the repository has at least N distinct branches.
+  - Example: `--require-branches 2 4` → two checks (2 branches, 4 branches).
+
+- `--require-tests <N>...`
+  - Each value produces a check that the student-written test count for a crate reaches at least N tests.
+  - **IMPORTANT:** `--require-tests` applies per manifest path. For a workspace, a threshold value produces a separate check for the root crate and for each member crate (i.e., each manifest path gets its own check).
+  - Example: in a workspace with `member/` and a root crate, `--require-tests 3` yields a `TEST_COUNT` check for the root (if present) and a `TEST_COUNT` check for `member` (each requiring 3 tests).
+    - This behavior can be refined by changing/removing the entries in `.autograder.json`
+
+Examples
 
 ```bash
---require-commits 5 10 15
+# Award 1 point for reaching 5, 10, and 20 commits
+autograder-setup init --require-commits 5 10 20
+
+# Award 1 point for having 2 and 4 branches
+autograder-setup init --require-branches 2 4
+
+# Require at least 3 tests for each manifest (root and each workspace member)
+autograder-setup init --require-tests 3
 ```
 
-Produces three independent checks:
+Notes
 
-- ✅ 1 point for reaching 5 commits
-- ✅ 1 point for reaching 10 commits
-- ✅ 1 point for reaching 15 commits
-
-Each threshold can also be fine-tuned directly in `.autograder/autograder.json`.
-
-> **Deprecated:** `--num-commit-checks N` expands to thresholds `1..=N` (e.g., `3` → `1 2 3`). Prefer `--require-commits`.
+- Each supplied value becomes an independent 1‑point check (not cumulative).
+- Deprecated: `--num-commit-checks N` expands to thresholds `1..=N` (e.g., `--num-commit-checks 3` → `1 2 3`). Prefer `--require-commits` for explicit thresholds.
