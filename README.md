@@ -77,7 +77,7 @@ Precompiled binaries are available on the latest GitHub release:
 | Windows (x86_64-pc-windows-gnu) | `.zip` | Extract and move `autograder-setup.exe` to your `PATH` |
 
 > See the docs for detailed OS-specific instructions:  
-> <https:joeyrussoniello.github.io/rust-autograder-setup/installation.html>
+> <[https:joeyrussoniello.github.io/rust-autograder-setup/installation.html](https://joeyrussoniello.github.io/rust-autograder-setup/installation.html)>
 
 ## Quickstart
 
@@ -106,7 +106,7 @@ autograder-setup reset --help
 
 ## Usage
 
-For a full CLI guide and usage instructions, see the [Complete Documentation](https:joeyrussoniello.github.io/rust-autograder-setup/)
+For a full CLI guide and usage instructions, see the [Complete Documentation](https://joeyrussoniello.github.io/rust-autograder-setup/)
 
 ## Repository Structure
 
@@ -167,3 +167,4 @@ For a full CLI guide and usage instructions, see the [Complete Documentation](ht
 ## Upcoming Features
 
 - Additional CLI improvements and configuration options
+
