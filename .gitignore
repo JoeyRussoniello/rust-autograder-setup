@@ -5,3 +5,4 @@
 /.autograder
 testRoots/
 docs-book/book
+.env
