@@ -45,7 +45,7 @@ fn threshold_autotests<I>(
     iterator: I,
     points: u32,
     prefix: &str,
-    description: &str, 
+    description: &str,
     mk_kind: impl Fn(u32) -> TestKind,
 ) -> Vec<AutoTest>
 where
