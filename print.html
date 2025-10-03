@@ -214,7 +214,14 @@
 <p>Assets are named: <code>autograder-setup-vX.Y.Z-&lt;target&gt;.tar.gz</code> (macOS) or <code>.zip</code> (Windows).</p>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
-<h2 id="option-a--install-from-release-recommended"><a class="header" href="#option-a--install-from-release-recommended">Option A — Install from release (recommended)</a></h2>
+<h2 id="option-a--install-via-cargo-recommended"><a class="header" href="#option-a--install-via-cargo-recommended">Option A — Install via Cargo (recommended)</a></h2>
+<p>If you already have Rust installed:</p>
+<pre><code class="language-bash">cargo install autograder-setup
+</code></pre>
+<p>Check installation:</p>
+<pre><code class="language-bash">autograder-setup --version
+</code></pre>
+<h2 id="option-b--install-from-release"><a class="header" href="#option-b--install-from-release">Option B — Install from release</a></h2>
 <h3 id="macos"><a class="header" href="#macos">macOS</a></h3>
 <pre><code class="language-bash"># 1) Download the macOS asset from the latest release
 # 2) Extract and install:
@@ -243,7 +250,7 @@ Move-Item $exe "$UserBin\autograder-setup.exe" -Force
 $env:PATH = "$UserBin;$env:PATH"
 autograder-setup --version
 </code></pre>
-<h2 id="option-b--build-from-source"><a class="header" href="#option-b--build-from-source">Option B — Build from source</a></h2>
+<h2 id="option-c--build-from-source"><a class="header" href="#option-c--build-from-source">Option C — Build from source</a></h2>
 <pre><code class="language-bash">git clone https://github.com/JoeyRussoniello/rust-autograder-setup
 cd rust-autograder-setup
 cargo build --release
