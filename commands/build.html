@@ -181,9 +181,12 @@
                         <h1 id="command-build"><a class="header" href="#command-build">Command: <code>build</code></a></h1>
 <p>Generates <code>.github/workflows/classroom.yaml</code> from <code>.autograder/autograder.json</code> (and a commit-count script if needed).</p>
 <h2 id="options"><a class="header" href="#options">Options</a></h2>
-<pre><code class="language-bash">-r, --root &lt;ROOT&gt;   Root of the Rust project [default: .]
-    --grade-on-push Run on push to any branch (default is only `repository_dispatch`)
--h, --help          Print help
+<pre><code class="language-bash">-r, --root &lt;ROOT&gt;
+        Root of the Rust project (defaults to current directory) [default: .]
+    --grade-on-push
+        Have autograder run on push to any branch (default: grade only on "Grade All" or `repository_dispatch`)
+-h, --help
+        Print help
 </code></pre>
 <h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
 <pre><code class="language-bash">autograder-setup build

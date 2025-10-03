@@ -317,15 +317,37 @@ This quickstart shows the minimal workflow instructors need to get up and runnin
 <div style="break-before: page; page-break-before: always;"></div><h1 id="command-init"><a class="header" href="#command-init">Command: <code>init</code></a></h1>
 <p>Scans the project (recursively), finds test functions, and writes <code>.autograder/autograder.json</code>. Supports nested Rust directories.</p>
 <h2 id="options"><a class="header" href="#options">Options</a></h2>
-<pre><code class="language-bash">-r, --root &lt;ROOT&gt;            Root of the Rust project [default: .]
--t, --tests-dir &lt;TESTS_DIR&gt;  Location of tests (defaults to &lt;root&gt;) [default: .]
-    --default-points &lt;N&gt;     Default points per test [default: 1]
-    --no-style-check         Disable the Clippy style check (enabled by default)
-    --no-commit-count        Disable Commit Counting (enabled by default)
-    --require-commits ...    Require specific commit thresholds (e.g. 5 10 15 20) [default: 1]
-    --require-branches ...   Require specific branch thresholds (e.g. 2 4 6) [default: 0]
-    --require-tests [N]      Require a minimum number of tests (default: 0; set to 1 if flag is passed without a value)
--h, --help                   Print help
+<pre><code class="language-bash">-r, --root &lt;ROOT&gt;
+        Root of the Rust project (defaults to current directory)
+
+        [default: .]
+
+-t, --tests-dir &lt;TESTS_DIR&gt;
+        Location of all test cases (defaults to &lt;root&gt;)
+
+        [default: .]
+
+    --default-points &lt;DEFAULT_POINTS&gt;
+        Default number of points per test
+
+        [default: 1]
+
+    --no-style-check
+        Disable the Clippy style check (enabled by default)
+
+    --require-commits &lt;REQUIRE_COMMITS&gt;...
+        Require specific commit thresholds (e.g. --require-commits 5 10 15 20)
+
+        [default: 1]
+
+    --require-branches &lt;REQUIRE_BRANCHES&gt;...
+        Require specific branch tresholds (e.g --require-branches 2 4 6)
+
+    --require-tests &lt;REQUIRE_TESTS&gt;...
+        Require specific student-written test thresholds (e.g --require-tests 2 4 6)
+
+-h, --help
+        Print help (see a summary with '-h')
 </code></pre>
 <h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
 <pre><code class="language-bash"># Initialize for a sibling repo
@@ -344,36 +366,66 @@ autograder-setup init --no-commit-count
 # Require at least 5 tests
 autograder-setup init --require-tests 5
 
-# Shortcut: require at least 1 test
-autograder-setup init --require-tests
-
 # Award 1 point for reaching 5, 10, and 20 commits
 autograder-setup init --require-commits 5 10 20
 
 # Award points for 10 and 20 commits, and for having 2 and 3 branches
 autograder-setup init --require-commits 10 20 --require-branches 2 3
 </code></pre>
-<h2 id="commit-counting"><a class="header" href="#commit-counting">Commit counting</a></h2>
-<p>By default, the generator creates a single commit check requiring <strong>at least 1 commit</strong>.<br />
-Override with <code>--require-commits</code> to specify multiple thresholds:</p>
-<pre><code class="language-bash">--require-commits 5 10 15
-</code></pre>
-<p>Produces three independent checks:</p>
+<h2 id="counting-checks-commits-branches-tests"><a class="header" href="#counting-checks-commits-branches-tests">Counting checks (commits, branches, tests)</a></h2>
+<p>The <code>init</code> command can emit simple threshold checks that award 1 point each when a submission meets a given threshold. The three related flags behave the same way: each value supplied becomes an independent 1‑point check.</p>
 <ul>
-<li>✅ 1 point for reaching 5 commits</li>
-<li>✅ 1 point for reaching 10 commits</li>
-<li>✅ 1 point for reaching 15 commits</li>
+<li>
+<p><code>--require-commits &lt;N&gt;...</code></p>
+<ul>
+<li>Each value produces a check that the submission has at least N commits.</li>
+<li>Example: <code>--require-commits 5 10 20</code> → three checks (5, 10, 20 commits).</li>
 </ul>
-<p>Each threshold can also be fine-tuned directly in <code>.autograder/autograder.json</code>.</p>
-<blockquote>
-<p><strong>Deprecated:</strong> <code>--num-commit-checks N</code> expands to thresholds <code>1..=N</code> (e.g., <code>3</code> → <code>1 2 3</code>). Prefer <code>--require-commits</code>.</p>
-</blockquote>
+</li>
+<li>
+<p><code>--require-branches &lt;N&gt;...</code></p>
+<ul>
+<li>Each value produces a check that the repository has at least N distinct branches.</li>
+<li>Example: <code>--require-branches 2 4</code> → two checks (2 branches, 4 branches).</li>
+</ul>
+</li>
+<li>
+<p><code>--require-tests &lt;N&gt;...</code></p>
+<ul>
+<li>Each value produces a check that the student-written test count for a crate reaches at least N tests.</li>
+<li><strong>IMPORTANT:</strong> <code>--require-tests</code> applies per manifest path. For a workspace, a threshold value produces a separate check for the root crate and for each member crate (i.e., each manifest path gets its own check).</li>
+<li>Example: in a workspace with <code>member/</code> and a root crate, <code>--require-tests 3</code> yields a <code>TEST_COUNT</code> check for the root (if present) and a <code>TEST_COUNT</code> check for <code>member</code> (each requiring 3 tests).
+<ul>
+<li>This behavior can be refined by changing/removing the entries in <code>.autograder.json</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>Examples</p>
+<pre><code class="language-bash"># Award 1 point for reaching 5, 10, and 20 commits
+autograder-setup init --require-commits 5 10 20
+
+# Award 1 point for having 2 and 4 branches
+autograder-setup init --require-branches 2 4
+
+# Require at least 3 tests for each manifest (root and each workspace member)
+autograder-setup init --require-tests 3
+</code></pre>
+<p>Notes</p>
+<ul>
+<li>Each supplied value becomes an independent 1‑point check (not cumulative).</li>
+<li>Deprecated: <code>--num-commit-checks N</code> expands to thresholds <code>1..=N</code> (e.g., <code>--num-commit-checks 3</code> → <code>1 2 3</code>). Prefer <code>--require-commits</code> for explicit thresholds.</li>
+</ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="command-build"><a class="header" href="#command-build">Command: <code>build</code></a></h1>
 <p>Generates <code>.github/workflows/classroom.yaml</code> from <code>.autograder/autograder.json</code> (and a commit-count script if needed).</p>
 <h2 id="options-1"><a class="header" href="#options-1">Options</a></h2>
-<pre><code class="language-bash">-r, --root &lt;ROOT&gt;   Root of the Rust project [default: .]
-    --grade-on-push Run on push to any branch (default is only `repository_dispatch`)
--h, --help          Print help
+<pre><code class="language-bash">-r, --root &lt;ROOT&gt;
+        Root of the Rust project (defaults to current directory) [default: .]
+    --grade-on-push
+        Have autograder run on push to any branch (default: grade only on "Grade All" or `repository_dispatch`)
+-h, --help
+        Print help
 </code></pre>
 <h2 id="examples-1"><a class="header" href="#examples-1">Examples</a></h2>
 <pre><code class="language-bash">autograder-setup build
