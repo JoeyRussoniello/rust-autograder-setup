@@ -1,6 +1,20 @@
 # Installation
 
-## Option A — Install from release (recommended)
+## Option A — Install via Cargo (recommended)
+
+If you already have Rust installed:  
+
+```bash
+cargo install autograder-setup
+```
+
+Check installation:
+
+```bash
+autograder-setup --version
+```
+
+## Option B — Install from release
 
 ### macOS
 
@@ -36,7 +50,7 @@ $env:PATH = "$UserBin;$env:PATH"
 autograder-setup --version
 ```
 
-## Option B — Build from source
+## Option C — Build from source
 
 ```bash
 git clone https://github.com/JoeyRussoniello/rust-autograder-setup
