@@ -8,7 +8,7 @@ repository = "https://github.com/JoeyRussoniello/rust-autograder-setup"
 homepage = "https://joeyrussoniello.github.io/rust-autograder-setup/"
 description = "Rust CLI that generates GitHub Classroom autograder workflows for Rust assignments."
 keywords = ["education", "classroom", "autograder", "cli", "github-actions"]
-categories = ["command-line-utilities", "development-tools::build-utilities"]
+categories = ["command-line-utilities", "command-line-interface", "development-tools::build-utils", "parsing"]
 
 include = [
   "Cargo.toml",
