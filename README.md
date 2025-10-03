@@ -128,9 +128,6 @@ autograder-setup --help
 # 1) Scan src/ recursively and create tests/autograder.json
 autograder-setup init
 
-# OR scan tests/  for tests if the assignment is a packages (uses lib.rs instead of main/mod.rs)
-autograder-setup init --tests-dir tests
-
 # 2) (Optional) Edit tests/autograder.json to adjust points/timeouts
 
 # 3) Generate the GitHub Actions workflow
@@ -522,3 +519,4 @@ autograder-setup reset
 
 - Additional CLI improvements and configuration options
 - Publish to `crates.io` for installation via `cargo install autograder-setup`
+
