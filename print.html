@@ -1,0 +1,608 @@
+<!DOCTYPE HTML>
+<html lang="en" class="ayu sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Rust Autograder Setup</title>
+        <meta name="robots" content="noindex">
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="Documentation for the autograder-setup CLI for GitHub Classroom with Rust">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "ayu";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('ayu')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Rust Autograder Setup</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/JoeyRussoniello/rust-autograder-setup" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="overview"><a class="header" href="#overview">Overview</a></h1>
+<p>A tiny Rust CLI that bootstraps <strong>GitHub Classroom autograding for Rust projects</strong>.</p>
+<blockquote>
+<p>🚀 Currently deployed in Boston University’s <em>Intro to Rust</em> course (130+ students, 1000+ student repos).</p>
+</blockquote>
+<h2 id="key-features"><a class="header" href="#key-features">Key Features</a></h2>
+<ul>
+<li>⚡ <strong>Fast setup</strong> — go from repo → Classroom-ready assignment in under 60 seconds.</li>
+<li>📝 <strong>Flexible outputs</strong> — grading tables copied to clipboard <em>or</em> written directly to your README.</li>
+<li>🏎️ <strong>Optimized CI</strong> — precompiled YAMLs (no runtime parsing) for faster, cheaper runs.</li>
+<li>🔧 <strong>Instructor-friendly CLI</strong> — <code>init</code>, <code>build</code>, <code>table</code>, <code>reset</code> cover the full workflow.</li>
+</ul>
+<h2 id="how-it-works"><a class="header" href="#how-it-works">How it Works</a></h2>
+<ul>
+<li><strong><code>init</code></strong> — scans for Rust tests and builds <code>.autograder/autograder.json</code>.</li>
+<li><strong><code>build</code></strong> — converts that config into a ready-to-run GitHub Actions workflow at <code>.github/workflows/classroom.yaml</code>.</li>
+<li><strong><code>table</code></strong> — generates a Markdown grading table for READMEs, keeping grading criteria transparent.</li>
+<li><strong><code>reset</code></strong> — cleans up generated files for a fresh start.</li>
+</ul>
+<p>Keeps autograding setup <strong>simple for instructors</strong> while making grading criteria <strong>clear for students</strong>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="releases"><a class="header" href="#releases">Releases</a></h1>
+<ul>
+<li><strong>Latest:</strong> <a href="https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest">https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest</a></li>
+<li><strong>All releases:</strong> <a href="https://github.com/JoeyRussoniello/rust-autograder-setup/releases">https://github.com/JoeyRussoniello/rust-autograder-setup/releases</a></li>
+</ul>
+<h2 id="prebuilt-binaries"><a class="header" href="#prebuilt-binaries">Prebuilt binaries</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>OS / Target</th><th>Download</th></tr></thead><tbody>
+<tr><td>macOS (x86_64-apple-darwin)</td><td>See <strong>Assets</strong> on the <a href="https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest">latest release</a></td></tr>
+<tr><td>Windows (x86_64-pc-windows-gnu)</td><td>See <strong>Assets</strong> on the <a href="https://github.com/JoeyRussoniello/rust-autograder-setup/releases/latest">latest release</a></td></tr>
+</tbody></table>
+</div>
+<blockquote>
+<p>Assets are named: <code>autograder-setup-vX.Y.Z-&lt;target&gt;.tar.gz</code> (macOS) or <code>.zip</code> (Windows).</p>
+</blockquote>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
+<h2 id="option-a--install-from-release-recommended"><a class="header" href="#option-a--install-from-release-recommended">Option A — Install from release (recommended)</a></h2>
+<h3 id="macos"><a class="header" href="#macos">macOS</a></h3>
+<pre><code class="language-bash"># 1) Download the macOS asset from the latest release
+# 2) Extract and install:
+tar -xzf autograder-setup-vX.Y.Z-x86_64-apple-darwin.tar.gz
+sudo install -m 0755 autograder-setup-vX.Y.Z-x86_64-apple-darwin/autograder-setup /usr/local/bin/autograder-setup
+
+# 3) Remove the Quarantine Attribute to disable macOS Gatekeeper and code signing requirement.
+sudo xattr -r -d com.apple.quarantine /usr/local/bin/autograder-setup
+
+# 4) Check that you can run it
+autograder-setup --version
+</code></pre>
+<h3 id="windows-powershell"><a class="header" href="#windows-powershell">Windows (PowerShell)</a></h3>
+<pre><code class="language-powershell"># 1) Download the Windows .zip from the latest release
+# 2) Extract and install:
+Expand-Archive autograder-setup-vX.Y.Z-x86_64-pc-windows-gnu.zip -DestinationPath .
+
+$dir = Get-ChildItem -Directory "autograder-setup-v*-x86_64-pc-windows-gnu" | Select-Object -First 1
+$exe = Join-Path $dir.FullName "autograder-setup.exe"
+
+$UserBin = "$env:USERPROFILE\.local\bin"
+New-Item -ItemType Directory -Force -Path $UserBin | Out-Null
+Move-Item $exe "$UserBin\autograder-setup.exe" -Force
+
+# Add to PATH for current session (optionally add permanently in System settings)
+$env:PATH = "$UserBin;$env:PATH"
+autograder-setup --version
+</code></pre>
+<h2 id="option-b--build-from-source"><a class="header" href="#option-b--build-from-source">Option B — Build from source</a></h2>
+<pre><code class="language-bash">git clone https://github.com/JoeyRussoniello/rust-autograder-setup
+cd rust-autograder-setup
+cargo build --release
+
+# binary at target/release/autograder-setup.
+# Add to PATH, or move the binary to the assignment repo you're configuring
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="quickstart"><a class="header" href="#quickstart">Quickstart</a></h1>
+<p>The goal of <code>autograder-setup</code> is to take a plain Rust project template and make it <strong>GitHub Classroom–ready in under a minute</strong>.<br />
+This quickstart shows the minimal workflow instructors need to get up and running.</p>
+<hr />
+<h2 id="step-0-explore-the-cli"><a class="header" href="#step-0-explore-the-cli">Step 0: Explore the CLI</a></h2>
+<pre><code class="language-bash">autograder-setup --help
+</code></pre>
+<p>This prints top-level usage and shows all available subcommands. Use <code>--help</code> after any command to see its options.</p>
+<hr />
+<h2 id="step-1-initialize-an-autograder-configuration"><a class="header" href="#step-1-initialize-an-autograder-configuration">Step 1: Initialize an autograder configuration</a></h2>
+<pre><code class="language-bash">autograder-setup init
+</code></pre>
+<ul>
+<li>Scans your project recursively for all <code>#[test]</code> functions.</li>
+<li>Builds a JSON config at <code>.autograder/autograder.json</code>.</li>
+<li>Automatically adds optional checks (Clippy linting, commit count) unless disabled.</li>
+</ul>
+<p>Why it’s useful: this JSON file acts as a <strong>single source of truth</strong> for grading. You can tweak points, timeouts, or thresholds before generating CI.</p>
+<hr />
+<h2 id="step-2-review-and-adjust-points"><a class="header" href="#step-2-review-and-adjust-points">Step 2: Review and adjust points</a></h2>
+<p>Open <code>.autograder/autograder.json</code> in your editor:</p>
+<pre><code class="language-json">[
+  {
+    "meta": { "name": "add_two", "description": "check add_two works", "points": 2, "timeout": 10 },
+    "type": "cargo_test",
+    "manifest_path": "Cargo.toml"
+  }
+]
+</code></pre>
+<p>You can increase/decrease point values, set timeouts, or change descriptions here. This makes grading <strong>customizable</strong>.</p>
+<hr />
+<h2 id="step-3-build-the-github-actions-workflow"><a class="header" href="#step-3-build-the-github-actions-workflow">Step 3: Build the GitHub Actions workflow</a></h2>
+<pre><code class="language-bash">autograder-setup build
+</code></pre>
+<ul>
+<li>Reads <code>.autograder/autograder.json</code>.</li>
+<li>Emits <code>.github/workflows/classroom.yaml</code> with one job per test/check.</li>
+<li>Uses the official <code>classroom-resources/autograding-*</code> actions.</li>
+</ul>
+<p>Why it’s useful: this workflow is what Classroom actually runs when grading. It ensures consistency between local tests and CI.</p>
+<hr />
+<h2 id="optional-step-4-generate-a-grading-table"><a class="header" href="#optional-step-4-generate-a-grading-table">(Optional) Step 4: Generate a grading table</a></h2>
+<pre><code class="language-bash">autograder-setup table --to-readme
+</code></pre>
+<ul>
+<li>Produces a Markdown table of test names, descriptions, and points.</li>
+<li>Appends to your <code>README.md</code>, or copy to clipboard by default.</li>
+</ul>
+<p>Why it’s useful: students can <strong>see exactly how they’ll be graded</strong> up front.</p>
+<hr />
+<h2 id="step-5-reset-if-needed"><a class="header" href="#step-5-reset-if-needed">Step 5: Reset if needed</a></h2>
+<pre><code class="language-bash">autograder-setup reset
+</code></pre>
+<p>Deletes <code>.autograder/</code> and the generated workflow, so you can start fresh.</p>
+<hr />
+<h2 id="summary"><a class="header" href="#summary">Summary</a></h2>
+<ul>
+<li><code>init</code> = discover tests and set up config</li>
+<li><code>build</code> = turn config into a ready-to-run workflow</li>
+<li><code>table</code> = generate a transparent grading table for students</li>
+<li><code>reset</code> = undo everything</li>
+</ul>
+<p>Together, these steps let you go from <strong>zero → reproducible autograder</strong> in under a minute, while keeping grading criteria explicit for both instructors and students.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="command-init"><a class="header" href="#command-init">Command: <code>init</code></a></h1>
+<p>Scans the project (recursively), finds test functions, and writes <code>.autograder/autograder.json</code>. Supports nested Rust directories.</p>
+<h2 id="options"><a class="header" href="#options">Options</a></h2>
+<pre><code class="language-bash">-r, --root &lt;ROOT&gt;            Root of the Rust project [default: .]
+-t, --tests-dir &lt;TESTS_DIR&gt;  Location of tests (defaults to &lt;root&gt;) [default: .]
+    --default-points &lt;N&gt;     Default points per test [default: 1]
+    --no-style-check         Disable the Clippy style check (enabled by default)
+    --no-commit-count        Disable Commit Counting (enabled by default)
+    --require-commits ...    Require specific commit thresholds (e.g. 5 10 15 20) [default: 1]
+    --require-branches ...   Require specific branch thresholds (e.g. 2 4 6) [default: 0]
+    --require-tests [N]      Require a minimum number of tests (default: 0; set to 1 if flag is passed without a value)
+-h, --help                   Print help
+</code></pre>
+<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
+<pre><code class="language-bash"># Initialize for a sibling repo
+autograder-setup init --root ../student-assignment
+
+# Only search ./tests recursively
+autograder-setup init --tests-dir tests
+
+# Default 5 points per test
+autograder-setup init --default-points 5
+
+# Omit style or commit checks
+autograder-setup init --no-style-check
+autograder-setup init --no-commit-count
+
+# Require at least 5 tests
+autograder-setup init --require-tests 5
+
+# Shortcut: require at least 1 test
+autograder-setup init --require-tests
+
+# Award 1 point for reaching 5, 10, and 20 commits
+autograder-setup init --require-commits 5 10 20
+
+# Award points for 10 and 20 commits, and for having 2 and 3 branches
+autograder-setup init --require-commits 10 20 --require-branches 2 3
+</code></pre>
+<h2 id="commit-counting"><a class="header" href="#commit-counting">Commit counting</a></h2>
+<p>By default, the generator creates a single commit check requiring <strong>at least 1 commit</strong>.<br />
+Override with <code>--require-commits</code> to specify multiple thresholds:</p>
+<pre><code class="language-bash">--require-commits 5 10 15
+</code></pre>
+<p>Produces three independent checks:</p>
+<ul>
+<li>✅ 1 point for reaching 5 commits</li>
+<li>✅ 1 point for reaching 10 commits</li>
+<li>✅ 1 point for reaching 15 commits</li>
+</ul>
+<p>Each threshold can also be fine-tuned directly in <code>.autograder/autograder.json</code>.</p>
+<blockquote>
+<p><strong>Deprecated:</strong> <code>--num-commit-checks N</code> expands to thresholds <code>1..=N</code> (e.g., <code>3</code> → <code>1 2 3</code>). Prefer <code>--require-commits</code>.</p>
+</blockquote>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="command-build"><a class="header" href="#command-build">Command: <code>build</code></a></h1>
+<p>Generates <code>.github/workflows/classroom.yaml</code> from <code>.autograder/autograder.json</code> (and a commit-count script if needed).</p>
+<h2 id="options-1"><a class="header" href="#options-1">Options</a></h2>
+<pre><code class="language-bash">-r, --root &lt;ROOT&gt;   Root of the Rust project [default: .]
+    --grade-on-push Run on push to any branch (default is only `repository_dispatch`)
+-h, --help          Print help
+</code></pre>
+<h2 id="examples-1"><a class="header" href="#examples-1">Examples</a></h2>
+<pre><code class="language-bash">autograder-setup build
+autograder-setup build --root ../student-assignment
+
+# Run on every push (small classes)
+autograder-setup build --grade-on-push
+</code></pre>
+<h2 id="workflow-details"><a class="header" href="#workflow-details">Workflow details</a></h2>
+<ul>
+<li>Fixed preamble (permissions, checkout, Rust toolchain).</li>
+<li>One autograding step per entry in <code>autograder.json</code>.</li>
+<li>Final reporter step wiring <code>${{ steps.&lt;id&gt;.outputs.result }}</code> into the report.</li>
+</ul>
+<h3 id="nameid-rules"><a class="header" href="#nameid-rules"><strong>Name/ID rules</strong></a></h3>
+<ul>
+<li>Step <code>name</code> / <code>test-name</code>: verbatim for <code>cargo test</code> entries; ALL_CAPS for other steps (e.g., <code>CLIPPY_STYLE_CHECK</code>).</li>
+<li>Step <code>id</code>: slugified <code>name</code> (lowercase; spaces &amp; non-alnum → <code>-</code>).</li>
+<li>Command: <code>cargo test &lt;name&gt;</code>.</li>
+</ul>
+<h3 id="workflow-triggers-on"><a class="header" href="#workflow-triggers-on">Workflow triggers (<code>on:</code>)</a></h3>
+<p>By default the generated workflow uses:</p>
+<ul>
+<li><code>on: [repository_dispatch]</code> — this lets instructors trigger grading from the classroom UI or a manual dispatch without running on every push.</li>
+</ul>
+<p>Running <code>autograder-setup build --grade-on-push</code>, the trigger will change to :</p>
+<ul>
+<li><code>on: [repository_dispatch, push]</code> — the workflow will also run on every push to the repository (all branches).</li>
+</ul>
+<p>Notes about choosing triggers:</p>
+<ul>
+<li><code>repository_dispatch</code> is the safe default for instructor-initiated grading (avoid running CI for every student push and balooning compute costs)</li>
+<li><code>--grade-on-push</code> is convenient for immediate feedback during development but may increase CI usage and spurious runs; consider branch/paths filters if you want to limit when pushes trigger the autograder.</li>
+</ul>
+<h2 id="example-workflow-yaml"><a class="header" href="#example-workflow-yaml">Example Workflow YAML</a></h2>
+<pre><code class="language-yaml">name: Autograding Tests
+on: [repository_dispatch]
+
+permissions:
+  checks: write
+  actions: read
+  contents: read
+
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy,rustfmt
+
+      - name: basic_add_small_numbers
+        id: basic-add-small-numbers
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: "basic_add_small_numbers"
+          setup-command: ""
+          command: "cargo test basic_add_small_numbers"
+          timeout: 10
+          max-score: 1
+
+      - name: CLIPPY_STYLE_CHECK
+        id: clippy-style-check
+        uses: classroom-resources/autograding-command-grader@v1
+        with:
+          test-name: "CLIPPY_STYLE_CHECK"
+          setup-command: ""
+          command: "cargo clippy -- -D warnings"
+          timeout: 10
+          max-score: 1
+
+      - name: Autograding Reporter
+        uses: classroom-resources/autograding-grading-reporter@v1
+        env:
+          BASIC-ADD-SMALL-NUMBERS_RESULTS: "${{steps.basic-add-small-numbers.outputs.result}}"
+          CLIPPY-STYLE-CHECK_RESULTS: "${{steps.clippy-style-check.outputs.result}}"
+        with:
+          runners: basic-add-small-numbers,clippy-style-check
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="command-table"><a class="header" href="#command-table">Command: <code>table</code></a></h1>
+<p>Reads <code>.autograder/autograder.json</code> and generates a Markdown table of test names, descriptions, and points.</p>
+<h2 id="options-2"><a class="header" href="#options-2">Options</a></h2>
+<pre><code class="language-bash">-r, --root &lt;ROOT&gt;   Root of the Rust project [default: .]
+    --no-clipboard  Print to stdout instead of copying to clipboard
+    --to-readme     Append the table to README.md
+-h, --help          Print help
+</code></pre>
+<h2 id="examples-2"><a class="header" href="#examples-2">Examples</a></h2>
+<pre><code class="language-bash">autograder-setup table            # copy to clipboard
+autograder-setup table --no-clipboard
+autograder-setup table --root ../student-assignment --to-readme
+</code></pre>
+<h2 id="example-output"><a class="header" href="#example-output">Example Output</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Test name</th><th>Description</th><th>Points</th></tr></thead><tbody>
+<tr><td><code>add_core</code></td><td>Add function works in the core case</td><td>10</td></tr>
+<tr><td><code>add_small_numbers</code></td><td>Add function works with small numbers</td><td>5</td></tr>
+<tr><td><code>add_with_negatives</code></td><td>Add function handles negative inputs</td><td>3</td></tr>
+<tr><td><code>clippy_style_check</code></td><td>Clippy linting check</td><td>2</td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="command-reset"><a class="header" href="#command-reset">Command: <code>reset</code></a></h1>
+<p>Deletes generated files: the <code>.autograder/</code> directory and <code>.github/workflows/classroom.yml</code>.</p>
+<h2 id="options-3"><a class="header" href="#options-3">Options</a></h2>
+<pre><code class="language-bash">-r, --root &lt;ROOT&gt;  Root of the Rust project [default: .]
+-h, --help         Print help
+</code></pre>
+<h2 id="example"><a class="header" href="#example">Example</a></h2>
+<pre><code class="language-bash">autograder-setup reset
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="autograderautograderjson-schema"><a class="header" href="#autograderautograderjson-schema"><code>.autograder/autograder.json</code> Schema</a></h1>
+<div class="table-wrapper"><table><thead><tr><th>Field</th><th>Type</th><th>Req</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>meta.name</code></td><td>string</td><td>yes</td><td>Display name in the workflow and test filter</td></tr>
+<tr><td><code>meta.description</code></td><td>string</td><td>yes</td><td>Student-facing description (supports <code>##</code> placeholder for counts)</td></tr>
+<tr><td><code>meta.points</code></td><td>number</td><td>yes</td><td>Max score for this test (default 1)</td></tr>
+<tr><td><code>meta.timeout</code></td><td>number</td><td>yes</td><td>Seconds for the autograder step (default 10)</td></tr>
+<tr><td><code>type</code></td><td>string</td><td>yes</td><td>One of: <code>cargo_test</code>, <code>clippy</code>, <code>commit_count</code>, <code>test_count</code></td></tr>
+<tr><td><code>manifest_path</code></td><td>string</td><td>no</td><td>Path to <code>Cargo.toml</code> (for <code>cargo_test</code>, <code>clippy</code>, <code>test_count</code>)</td></tr>
+<tr><td><code>min_commits</code></td><td>number</td><td>no</td><td>Required commits (only for <code>commit_count</code>)</td></tr>
+<tr><td><code>min_tests</code></td><td>number</td><td>no</td><td>Required tests (only for <code>test_count</code>)</td></tr>
+</tbody></table>
+</div>
+<h2 id="example-1"><a class="header" href="#example-1">Example</a></h2>
+<pre><code class="language-json">[
+  {
+     "meta": { "name": "test_func_1", "description": "a test function", "points": 1, "timeout": 10 },
+     "type": "cargo_test",
+     "manifest_path": "Cargo.toml"
+  },
+  {
+    "meta": { "name": "COMMIT_COUNT_1", "description": "Ensure at least ## commits.", "points": 1, "timeout": 10 },
+    "type": "commit_count",
+    "min_commits": 5
+  },
+  {
+    "meta": { "name": "TEST_COUNT", "description": "Ensure at least ## tests exist.", "points": 1, "timeout": 10 },
+    "type": "test_count",
+    "min_tests": 3
+  }
+]
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="repository-structure"><a class="header" href="#repository-structure">Repository Structure</a></h1>
+<pre><code class="language-text">.
+├── Cargo.lock                           # Cargo dependency lockfile (generated; checked in for reproducible builds)
+├── Cargo.toml                           # Crate metadata and dependencies
+├── LICENSE                              # Project license
+├── README.md                            # Top-level overview (link to docs)
+└── src
+    ├── cli                              # CLI subcommands and orchestration
+    │   ├── build                        # `autograder-setup build` — render workflow YAML from autograder.json
+    │   │   ├── build_functions.rs       # Preamble, YAML helpers, commit-count script writer, small utilities
+    │   │   ├── mod.rs                   # Subcommand entry + YAMLAutograder builder (ties everything together)
+    │   │   ├── steps.rs                 # Hand-assembled YAML step emitters (CommandStep / ReporterStep)
+    │   │   └── tests.rs                 # Unit tests for YAML rendering and build behavior
+    │   ├── init                         # `autograder-setup init` — scan tests and write `.autograder/autograder.json`
+    │   │   ├── functions.rs             # High-level constructors for AutoTests (clippy/commit count/test count)
+    │   │   ├── mod.rs                   # Subcommand entry and pipeline glue
+    │   │   ├── scan.rs                  # Rust source scanner (finds #[test]/#[..::test], docs, manifests)
+    │   │   └── tests.rs                 # Parser/scan tests and manifest-path logic tests
+    │   ├── mod.rs                       # Top-level CLI wiring (arg parsing, subcommand dispatch)
+    │   ├── reset                        # `autograder-setup reset` — remove generated files
+    │   │   ├── mod.rs                   # Subcommand entry
+    │   │   └── tests.rs                 # Safety checks for deleting generated artifacts
+    │   ├── table                        # `autograder-setup table` — generate student-facing Markdown table
+    │   │   └── mod.rs                   # Subcommand entry and table rendering
+    │   └── tests.rs                     # Cross-subcommand/integration-style tests for the CLI layer
+    ├── main.rs                          # Binary entrypoint; delegates to `cli`
+    ├── types                            # Core data model for the autograder
+    │   ├── command_makers.rs            # Per-variant command builders (cargo test/clippy/test-count/commit-count)
+    │   └── mod.rs                       # `AutoTest { meta, kind }`, `TestMeta`, `TestKind` + Markdown row impl
+    └── utils
+        ├── mod.rs                       # Shared helpers: path walking, slug/id, yaml_quote, replace_double_hashtag, etc.
+        └── tests.rs                     # Unit tests for utilities
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="faq"><a class="header" href="#faq">FAQ</a></h1>
+<p><strong>Does it run on every push?</strong><br />
+Only if you use <code>--grade-on-push</code>. The default trigger is <code>repository_dispatch</code> to keep CI usage low.</p>
+<p><strong>How do I show a grading table in the README?</strong><br />
+Run <code>autograder-setup table</code> (copy to clipboard) or <code>autograder-setup table --to-readme</code>.</p>
+<p><strong>Can I award partial credit for commit frequency?</strong><br />
+Yes – use multiple thresholds with <code>--require-commits</code>, e.g., <code>5 10 20</code>.</p>
+<p><strong>How do I require students to write additional tests?</strong><br />
+Use <code>--require-tests N</code>. The autograder expects <code>N</code> + the number of tests generated from <code>cargo test</code> entries.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+
+    </div>
+    </body>
+</html>
