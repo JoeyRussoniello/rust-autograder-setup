@@ -2,7 +2,8 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 
-use clap::{Args, Parser, Subcommand};
+use clap::{ArgAction, Args, Parser, Subcommand};
+use helpers::build::{Preset, Trigger};
 use helpers::init::RunConfig;
 
 pub mod build;
@@ -97,15 +98,20 @@ pub struct InitArgs {
     pub require_tests: Vec<u32>,
 }
 
-#[derive(Args, Debug)]
+#[derive(Parser, Debug)]
 pub struct BuildArgs {
     /// Root of the Rust project (defaults to current directory)
     #[arg(short, long, default_value = ".")]
     pub root: PathBuf,
 
-    /// Have autograder run on push to any branch (default: grade only on "Grade All" or `repository_dispatch`)
-    #[arg(long = "grade-on-push", default_value_t = false)]
-    pub grade_on_push: bool,
+    /// Add one or more triggers (repository_dispatch is always included)
+    /// e.g. --trigger push --trigger pull_request
+    #[arg(long = "trigger", value_enum, action = ArgAction::Append)]
+    pub triggers: Vec<Trigger>,
+
+    /// Quick config for common classroom setups
+    #[arg(long = "preset", value_enum)]
+    pub preset: Option<Preset>,
 }
 
 #[derive(Args, Debug)]
@@ -138,7 +144,7 @@ pub fn run() -> Result<()> {
             init::run(&cfg)
         }
         // Build has no args; default to current dir root like init would.
-        Command::Build(a) => build::run(&a.root, a.grade_on_push),
+        Command::Build(a) => build::run(&a.root, &a.triggers, &a.preset),
         Command::Table(a) => table::run(&a.root, !a.no_clipboard, a.to_readme),
         Command::Reset(a) => reset::run(&a.root),
     }

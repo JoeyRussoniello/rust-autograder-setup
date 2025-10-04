@@ -2,46 +2,67 @@ use anyhow::{Context, Result};
 use std::fs::{create_dir_all, write};
 use std::path::Path;
 // Import all utility script constants
+use crate::cli::helpers::build::{Preset, Trigger, resolve_triggers};
 use crate::utils::scripts::*;
+
+// TODO: Rewrite this using a struct to hold `on` options and
 /// Generates the YAML preamble for the GitHub Actions workflow file.
-pub fn get_yaml_preamble(on_push: bool) -> String {
-    let mut triggers = vec!["repository_dispatch"];
+pub fn get_yaml_preamble(preset: Option<Preset>, explicit_triggers: &[Trigger]) -> String {
+    use Trigger::*;
 
-    if on_push {
-        triggers.push("push");
+    let chosen = resolve_triggers(preset, explicit_triggers);
+
+    // Always-on baseline:
+    let mut lines: Vec<String> = vec![
+        "name: Autograding Tests".into(),
+        "on:".into(),
+        "  repository_dispatch:".into(),
+    ];
+
+    if chosen.contains(&WorkflowDispatch) {
+        lines.push("  workflow_dispatch:".into());
     }
-    let triggers_joined = triggers.join(", ");
+    if chosen.contains(&Push) {
+        // Keep as a block so we can drop in branches/paths later
+        lines.push("  push:".into());
+        // (future) lines.push("    branches:"); etc.
+    }
+    if chosen.contains(&PullRequest) {
+        lines.push("  pull_request:".into());
+        // (future) lines.push("    types:"); etc.
+    }
 
-    let preamble = format!(
-        r#"name: Autograding Tests
-on: [{}]
-
-permissions:
-  checks: write
-  actions: read
-  contents: read
-
-jobs:
-  run-autograding-tests:
-    runs-on: ubuntu-latest
-    if: github.actor != 'github-classroom[bot]'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          # Checkout with fetch depth 0 to get a full git history for commit counting
-          fetch-depth: 0
-    
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy,rustfmt
-
-"#,
-        triggers_joined
+    // static permissions + job header
+    lines.extend(
+        [
+            "".to_string(),
+            "permissions:".into(),
+            "  checks: write".into(),
+            "  actions: read".into(),
+            "  contents: read".into(),
+            "".into(),
+            "jobs:".into(),
+            "  run-autograding-tests:".into(),
+            "    runs-on: ubuntu-latest".into(),
+            "    if: github.actor != 'github-classroom[bot]'".into(),
+            "    steps:".into(),
+            "      - name: Checkout code".into(),
+            "        uses: actions/checkout@v4".into(),
+            "        with:".into(),
+            "          # Checkout with fetch depth 0 to get a full git history for commit counting"
+                .into(),
+            "          fetch-depth: 0".into(),
+            "".into(),
+            "      - name: Install Rust toolchain".into(),
+            "        uses: dtolnay/rust-toolchain@stable".into(),
+            "        with:".into(),
+            "          components: clippy,rustfmt".into(),
+            "".into(),
+        ]
+        .map(String::from),
     );
 
-    preamble
+    lines.join("\n")
 }
 
 /// Shared function to write any script to the .autograder directory
