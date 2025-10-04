@@ -2,17 +2,15 @@ use anyhow::{Context, Result};
 use std::fs::{create_dir_all, write};
 use std::path::Path;
 // Import all utility script constants
+use super::preamble::*;
 use crate::cli::helpers::build::{Preset, Trigger};
 use crate::utils::scripts::*;
-use super::preamble::*;
 
 /// Generates the YAML preamble for the GitHub Actions workflow file.
 pub fn get_yaml_preamble(preset: Option<Preset>, explicit_triggers: &[Trigger]) -> String {
     let on_cfg = OnConfig::from_args(preset, explicit_triggers);
 
-    let mut lines: Vec<String> = vec![
-        "name: Autograding Tests".into(),
-    ];
+    let mut lines: Vec<String> = vec!["name: Autograding Tests".into()];
 
     // Render the `on:` block
     lines.extend(on_cfg.to_yaml_lines());
@@ -33,7 +31,8 @@ pub fn get_yaml_preamble(preset: Option<Preset>, explicit_triggers: &[Trigger]) 
         "      - name: Checkout code".into(),
         "        uses: actions/checkout@v4".into(),
         "        with:".into(),
-        "          # Checkout with fetch depth 0 to get a full git history for commit counting".into(),
+        "          # Checkout with fetch depth 0 to get a full git history for commit counting"
+            .into(),
         "          fetch-depth: 0".into(),
         "".into(),
         "      - name: Install Rust toolchain".into(),

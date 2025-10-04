@@ -13,9 +13,9 @@ impl TriggerKind {
     pub fn yaml_key(&self) -> &'static str {
         match self {
             TriggerKind::RepositoryDispatch => "repository_dispatch",
-            TriggerKind::WorkflowDispatch   => "workflow_dispatch",
-            TriggerKind::Push               => "push",
-            TriggerKind::PullRequest        => "pull_request",
+            TriggerKind::WorkflowDispatch => "workflow_dispatch",
+            TriggerKind::Push => "push",
+            TriggerKind::PullRequest => "pull_request",
         }
     }
 }
@@ -29,10 +29,10 @@ impl Display for TriggerKind {
 /// Per-trigger filters (only emit when Some/NonEmpty)
 #[derive(Clone, Debug, Default)]
 pub struct TriggerOptions {
-    pub branches: Option<Vec<String>>,      // push / pull_request
-    pub paths: Option<Vec<String>>,         // push / pull_request
-    pub paths_ignore: Option<Vec<String>>,  // push / pull_request
-    pub pr_types: Option<Vec<String>>,      // pull_request only
+    pub branches: Option<Vec<String>>,     // push / pull_request
+    pub paths: Option<Vec<String>>,        // push / pull_request
+    pub paths_ignore: Option<Vec<String>>, // push / pull_request
+    pub pr_types: Option<Vec<String>>,     // pull_request only
 }
 
 impl TriggerOptions {
@@ -72,7 +72,7 @@ impl OnConfig {
         // Always-on baseline
         triggers.insert(RepositoryDispatch, TriggerOptions::default());
 
-        // Fill chosen triggers with empty options 
+        // Fill chosen triggers with empty options
         // TODO: Expand to add options as an enum
         for k in chosen {
             triggers.entry(k).or_default();
@@ -146,4 +146,3 @@ impl OnConfig {
         lines
     }
 }
-
