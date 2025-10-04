@@ -9,6 +9,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::fs::{File, create_dir_all};
 use steps::{CommandStep, CommandWith, ReporterStep};
 
+mod preamble;
 mod build_functions;
 mod steps;
 

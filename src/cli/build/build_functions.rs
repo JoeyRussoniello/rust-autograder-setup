@@ -2,65 +2,46 @@ use anyhow::{Context, Result};
 use std::fs::{create_dir_all, write};
 use std::path::Path;
 // Import all utility script constants
-use crate::cli::helpers::build::{Preset, Trigger, resolve_triggers};
+use crate::cli::helpers::build::{Preset, Trigger};
 use crate::utils::scripts::*;
+use super::preamble::*;
 
-// TODO: Rewrite this using a struct to hold `on` options and
 /// Generates the YAML preamble for the GitHub Actions workflow file.
 pub fn get_yaml_preamble(preset: Option<Preset>, explicit_triggers: &[Trigger]) -> String {
-    use Trigger::*;
+    let on_cfg = OnConfig::from_args(preset, explicit_triggers);
 
-    let chosen = resolve_triggers(preset, explicit_triggers);
-
-    // Always-on baseline:
     let mut lines: Vec<String> = vec![
         "name: Autograding Tests".into(),
-        "on:".into(),
-        "  repository_dispatch:".into(),
     ];
 
-    if chosen.contains(&WorkflowDispatch) {
-        lines.push("  workflow_dispatch:".into());
-    }
-    if chosen.contains(&Push) {
-        // Keep as a block so we can drop in branches/paths later
-        lines.push("  push:".into());
-        // (future) lines.push("    branches:"); etc.
-    }
-    if chosen.contains(&PullRequest) {
-        lines.push("  pull_request:".into());
-        // (future) lines.push("    types:"); etc.
-    }
+    // Render the `on:` block
+    lines.extend(on_cfg.to_yaml_lines());
 
     // static permissions + job header
-    lines.extend(
-        [
-            "".to_string(),
-            "permissions:".into(),
-            "  checks: write".into(),
-            "  actions: read".into(),
-            "  contents: read".into(),
-            "".into(),
-            "jobs:".into(),
-            "  run-autograding-tests:".into(),
-            "    runs-on: ubuntu-latest".into(),
-            "    if: github.actor != 'github-classroom[bot]'".into(),
-            "    steps:".into(),
-            "      - name: Checkout code".into(),
-            "        uses: actions/checkout@v4".into(),
-            "        with:".into(),
-            "          # Checkout with fetch depth 0 to get a full git history for commit counting"
-                .into(),
-            "          fetch-depth: 0".into(),
-            "".into(),
-            "      - name: Install Rust toolchain".into(),
-            "        uses: dtolnay/rust-toolchain@stable".into(),
-            "        with:".into(),
-            "          components: clippy,rustfmt".into(),
-            "".into(),
-        ]
-        .map(String::from),
-    );
+    lines.extend([
+        "".into(),
+        "permissions:".into(),
+        "  checks: write".into(),
+        "  actions: read".into(),
+        "  contents: read".into(),
+        "".into(),
+        "jobs:".into(),
+        "  run-autograding-tests:".into(),
+        "    runs-on: ubuntu-latest".into(),
+        "    if: github.actor != 'github-classroom[bot]'".into(),
+        "    steps:".into(),
+        "      - name: Checkout code".into(),
+        "        uses: actions/checkout@v4".into(),
+        "        with:".into(),
+        "          # Checkout with fetch depth 0 to get a full git history for commit counting".into(),
+        "          fetch-depth: 0".into(),
+        "".into(),
+        "      - name: Install Rust toolchain".into(),
+        "        uses: dtolnay/rust-toolchain@stable".into(),
+        "        with:".into(),
+        "          components: clippy,rustfmt".into(),
+        "".into(),
+    ]);
 
     lines.join("\n")
 }
