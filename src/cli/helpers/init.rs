@@ -1,6 +1,6 @@
 // Helper types for CLI arguments
+use crate::cli::InitArgs;
 use std::path::PathBuf;
-use crate::cli::{InitArgs};
 
 #[derive(Debug, Clone)]
 /// A helper container struct to stabilize Init::run() with the new feature additions

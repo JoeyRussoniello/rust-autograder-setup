@@ -5,8 +5,8 @@ use anyhow::Result;
 use clap::{Args, Parser, Subcommand};
 use helpers::init::RunConfig;
 
-pub mod helpers;
 pub mod build;
+pub mod helpers;
 pub mod init;
 pub mod reset;
 pub mod table;
@@ -96,8 +96,6 @@ pub struct InitArgs {
     #[arg(long = "require-tests", value_delimiter = ' ', num_args(1..), default_values_t = Vec::<u32>::new())]
     pub require_tests: Vec<u32>,
 }
-
-
 
 #[derive(Args, Debug)]
 pub struct BuildArgs {
