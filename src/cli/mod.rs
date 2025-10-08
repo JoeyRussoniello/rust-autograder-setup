@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 
-use clap::{ArgAction, Args, Parser, Subcommand};
+use clap::{Args, Parser, Subcommand};
 use helpers::build::{Preset, TriggerKind, collect_trigger_options};
 use helpers::init::RunConfig;
 
@@ -104,9 +104,12 @@ pub struct BuildArgs {
     #[arg(short, long, default_value = ".")]
     pub root: PathBuf,
 
-    /// Add one or more triggers (repository_dispatch is always included)
-    /// e.g. --trigger push --trigger pull_request
-    #[arg(long = "trigger", value_enum, action = ArgAction::Append)]
+    /// Add one or more event triggers (always includes `repository_dispatch`)
+    ///
+    /// Examples:
+    ///   --trigger push
+    ///   --trigger push --trigger pull-request
+    #[arg(long = "triggers", value_enum, value_delimiter = ' ', num_args(1..) )]
     pub triggers: Vec<TriggerKind>,
 
     /// Quick config for common classroom setups
@@ -114,17 +117,17 @@ pub struct BuildArgs {
     pub preset: Option<Preset>,
 
     /// Configure what branches cause pushes and PRs to run the autograder
-    #[arg(long = "branches", value_delimiter = ' ')]
+    #[arg(long = "branches", value_delimiter = ' ', num_args(1..))]
     pub branches: Vec<String>,
 
     /// Configure which file changes cause pushes and PRs to run the autograder
     /// e.g --trigger push --paths */mod.rs
-    #[arg(long = "paths", value_delimiter = ' ')]
+    #[arg(long = "paths", value_delimiter = ' ', num_args(1..))]
     pub paths: Vec<String>,
 
     /// Configure while file changes should never cause the pushes and PRs to run the autograder
     /// e.g --trigger push --paths-ignore README.md
-    #[arg(long = "paths-ignore", value_delimiter = ' ')]
+    #[arg(long = "paths-ignore", value_delimiter = ' ', num_args(1..))]
     pub paths_ignore: Vec<String>,
 }
 

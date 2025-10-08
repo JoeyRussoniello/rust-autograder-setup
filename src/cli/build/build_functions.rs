@@ -42,8 +42,7 @@ fn render_expanded_on(triggers: &std::collections::BTreeSet<Trigger>) -> Vec<Str
                 // With options: first the key line, then the options already formatted
                 lines.push(format!("  {}:", t.kind.get_yaml_str()));
                 for o in opts {
-                    // * THIS MAY NEED TO BE CHANGED TO A DOUBLE INDENT
-                    lines.push(format!("  {}", o)); // options are already "key: [..]" lines
+                    lines.push(format!("    {}", o)); // options are already "key: [..]" lines
                 }
             }
         }
