@@ -1,16 +1,54 @@
 # Command: `build`
 
-Generates `.github/workflows/classroom.yaml` from `.autograder/autograder.json` (and a commit-count script if needed).
+Generates `.github/workflows/classroom.yaml` from `.autograder/autograder.json`
+(and a commit-count script if needed).
 
 ## Options
 
 ```bash
 -r, --root <ROOT>
-        Root of the Rust project (defaults to current directory) [default: .]
-    --grade-on-push
-        Have autograder run on push to any branch (default: grade only on "Grade All" or `repository_dispatch`)
+        Root directory of the Rust project (defaults to current directory)
+        [default: .]
+
+    --triggers <TRIGGERS>...
+        Add one or more event triggers (always includes `repository_dispatch`)
+
+        Examples:
+          --triggers push pull-request
+
+        Possible values:
+          - workflow-dispatch: Manual run via the Actions UI
+          - push:              Run on git push
+          - pull-request:      Run on PR events
+
+    --preset <PRESET>
+        Quick config for common classroom setups
+
+        Possible values:
+          - instructor:   Instructor-driven grading; manual-friendly
+          - student-push: Students get feedback on push
+          - student-pr:   Students get feedback on PRs
+
+    --branches <BRANCHES>...
+        Restrict pushes and PRs to these branches
+
+        Example:
+          --branches main feature
+
+    --paths <PATHS>...
+        Only grade when changes affect these files or paths
+
+        Example:
+          --paths src/** Cargo.toml
+
+    --paths-ignore <PATHS_IGNORE>...
+        Ignore pushes and PRs that *only* affect these files or paths
+
+        Example:
+          --paths-ignore README.md docs/**
+
 -h, --help
-        Print help
+        Print help (see a summary with '-h')
 ```
 
 ## Examples
@@ -19,8 +57,14 @@ Generates `.github/workflows/classroom.yaml` from `.autograder/autograder.json` 
 autograder-setup build
 autograder-setup build --root ../student-assignment
 
-# Run on every push (small classes)
-autograder-setup build --grade-on-push
+# Run on every push and pull request
+autograder-setup build --triggers push pull-request
+
+# Restrict to main branch only
+autograder-setup build --triggers push pull-request --branches main
+
+# Ignore documentation-only changes
+autograder-setup build --triggers push --paths-ignore README.md docs/**
 ```
 
 ## Workflow details
@@ -37,24 +81,26 @@ autograder-setup build --grade-on-push
 
 ### Workflow triggers (`on:`)
 
-By default the generated workflow uses:
+> By default, the generated workflow uses: `on: [repository_dispatch]`. This allows instructors to trigger grading manually from the Classroom UI.
 
-- `on: [repository_dispatch]` — this lets instructors trigger grading from the classroom UI or a manual dispatch without running on every push.
+Running with flags modifies the triggers:
 
-Running `autograder-setup build --grade-on-push`, the trigger will change to :
-
-- `on: [repository_dispatch, push]` — the workflow will also run on every push to the repository (all branches).
+- `--triggers push` — run the autograder on every push.
+- `--triggers push pull-request` — run on every push and pull request.
+- `--branches` — restrict which branches are eligible for push/PR grading.
+- `--paths` and `--paths-ignore` — limit workflow runs to specific file changes.
 
 Notes about choosing triggers:
 
-- `repository_dispatch` is the safe default for instructor-initiated grading (avoid running CI for every student push and balooning compute costs)
-- `--grade-on-push` is convenient for immediate feedback during development but may increase CI usage and spurious runs; consider branch/paths filters if you want to limit when pushes trigger the autograder.
+- `repository_dispatch` is the safe default for instructor-initiated grading (avoids CI load on every push).
+- `push` or `pull-request` triggers give students instant feedback but increase compute usage.
+- Combine `--branches`, `--paths`, and `--paths-ignore` to control when grading runs.
 
 ## Example Workflow YAML
 
 ```yaml
 name: Autograding Tests
-on: [repository_dispatch]
+on: [repository_dispatch, push]
 
 permissions:
   checks: write
@@ -68,6 +114,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
