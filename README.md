@@ -43,7 +43,7 @@ Keeps autograding setup **simple for instructors** while making grading criteria
 
 ---
 
-## 📦 Releases
+## Releases
 
 - **Latest:** [https:github.com/JoeyRussoniello/rust-autograder-setup/releases/latest](https:github.com/JoeyRussoniello/rust-autograder-setup/releases/latest)
 - **All releases:** [https:github.com/JoeyRussoniello/rust-autograder-setup/releases](https:github.com/JoeyRussoniello/rust-autograder-setup/releases)
@@ -76,8 +76,7 @@ Precompiled binaries are available on the latest GitHub release:
 | macOS (x86_64-apple-darwin)  | `.tar.gz` | Extract and install to `/usr/local/bin`                 |
 | Windows (x86_64-pc-windows-gnu) | `.zip` | Extract and move `autograder-setup.exe` to your `PATH` |
 
-> See the docs for detailed OS-specific instructions:  
-> <[https:joeyrussoniello.github.io/rust-autograder-setup/installation.html](https://joeyrussoniello.github.io/rust-autograder-setup/installation.html)>
+> See the docs for [detailed OS-specific instructions](https://joeyrussoniello.github.io/rust-autograder-setup/installation.html):  
 
 ## Quickstart
 
@@ -167,4 +166,3 @@ For a full CLI guide and usage instructions, see the [Complete Documentation](ht
 ## Upcoming Features
 
 - Additional CLI improvements and configuration options
-
