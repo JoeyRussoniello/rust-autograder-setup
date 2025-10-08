@@ -1,5 +1,4 @@
 use super::*;
-use crate::cli::helpers::build::Trigger;
 use crate::types::*;
 
 // Ensures a plain cargo test emits the expected step with quoted fields and no -- --exact
@@ -29,7 +28,7 @@ fn yaml_includes_basic_cargo_test_step() -> anyhow::Result<()> {
     )?;
 
     // Act
-    run(root, &[Trigger::Push], &None)?;
+    run(root, &[TriggerKind::Push], &None, &[])?;
     let yaml = std::fs::read_to_string(root.join(".github/workflows/classroom.yml"))?;
 
     // Assert (quoted fields, no -- --exact)
@@ -68,7 +67,7 @@ fn yaml_orders_manifest_flag_after_name() -> anyhow::Result<()> {
         serde_json::to_string_pretty(&tests)?,
     )?;
 
-    run(root, &[Trigger::Push], &None)?;
+    run(root, &[TriggerKind::Push], &None, &[])?;
     let yaml = std::fs::read_to_string(root.join(".github/workflows/classroom.yml"))?;
 
     // Exact order we want
@@ -111,7 +110,7 @@ fn yaml_includes_clippy_and_commit_count_and_reporter_env() -> anyhow::Result<()
         serde_json::to_string_pretty(&tests)?,
     )?;
 
-    run(root, &[Trigger::Push], &None)?;
+    run(root, &[TriggerKind::Push], &None, &[])?;
     let yaml = std::fs::read_to_string(root.join(".github/workflows/classroom.yml"))?;
 
     // Clippy

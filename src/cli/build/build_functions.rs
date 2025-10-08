@@ -1,47 +1,101 @@
 use anyhow::{Context, Result};
+use std::collections::BTreeSet;
 use std::fs::{create_dir_all, write};
 use std::path::Path;
 // Import all utility script constants
-use super::preamble::*;
-use crate::cli::helpers::build::{Preset, Trigger};
+use crate::cli::helpers::build::{Preset, Trigger, TriggerKind, TriggerOption, resolve_triggers};
 use crate::utils::scripts::*;
 
-/// Generates the YAML preamble for the GitHub Actions workflow file.
-pub fn get_yaml_preamble(preset: Option<Preset>, explicit_triggers: &[Trigger]) -> String {
-    let on_cfg = OnConfig::from_args(preset, explicit_triggers);
+/// Any trigger with options means we need the expanded `on:` block.
+fn needs_expanded_on(triggers: &BTreeSet<Trigger>) -> bool {
+    triggers.iter().any(|t| t.options_to_yaml_lines().is_some())
+}
 
-    let mut lines: Vec<String> = vec!["name: Autograding Tests".into()];
+/// `on: [repository_dispatch, push, pull_request]`
+fn render_compact_on(triggers: &BTreeSet<Trigger>) -> String {
+    // NOTE: This assumes each trigger would render to a single token in compact form.
+    let mut tokens = Vec::with_capacity(triggers.len() + 1);
+    tokens.push("repository_dispatch".to_string());
+    for t in triggers {
+        tokens.push(t.kind.get_yaml_str());
+    }
+    format!("on: [{}]", tokens.join(", "))
+}
 
-    // Render the `on:` block
-    lines.extend(on_cfg.to_yaml_lines());
+/// Expanded form:
+/// on:
+///   repository_dispatch:
+///   push:
+///     branches: [main]
+///     paths: [src/**]
+fn render_expanded_on(triggers: &std::collections::BTreeSet<Trigger>) -> Vec<String> {
+    let mut lines = vec!["on:".into(), "  repository_dispatch:".into()];
 
-    // static permissions + job header
-    lines.extend([
-        "".into(),
-        "permissions:".into(),
-        "  checks: write".into(),
-        "  actions: read".into(),
-        "  contents: read".into(),
-        "".into(),
-        "jobs:".into(),
-        "  run-autograding-tests:".into(),
-        "    runs-on: ubuntu-latest".into(),
-        "    if: github.actor != 'github-classroom[bot]'".into(),
-        "    steps:".into(),
-        "      - name: Checkout code".into(),
-        "        uses: actions/checkout@v4".into(),
-        "        with:".into(),
-        "          # Checkout with fetch depth 0 to get a full git history for commit counting"
-            .into(),
-        "          fetch-depth: 0".into(),
-        "".into(),
-        "      - name: Install Rust toolchain".into(),
-        "        uses: dtolnay/rust-toolchain@stable".into(),
-        "        with:".into(),
-        "          components: clippy,rustfmt".into(),
-        "".into(),
-    ]);
+    for t in triggers {
+        match t.options_to_yaml_lines() {
+            None => {
+                // No options: emit just the mapping key
+                let key = t.kind.get_yaml_str();
+                lines.push(format!("  {}:", key));
+            }
+            Some(opts) => {
+                // With options: first the key line, then the options already formatted
+                lines.push(format!("  {}:", t.kind.get_yaml_str()));
+                for o in opts {
+                    // * THIS MAY NEED TO BE CHANGED TO A DOUBLE INDENT
+                    lines.push(format!("  {}", o)); // options are already "key: [..]" lines
+                }
+            }
+        }
+    }
+    lines
+}
 
+/// Decide compact vs expanded and append to `out`.
+fn render_on_block(triggers: &std::collections::BTreeSet<Trigger>, out: &mut Vec<String>) {
+    if needs_expanded_on(triggers) {
+        out.extend(render_expanded_on(triggers));
+    } else {
+        out.push(render_compact_on(triggers));
+    }
+}
+
+const FIXED_PREAMBLE_TAIL: &[&str] = &[
+    "",
+    "permissions:",
+    "  checks: write",
+    "  actions: read",
+    "  contents: read",
+    "",
+    "jobs:",
+    "  run-autograding-tests:",
+    "    runs-on: ubuntu-latest",
+    "    if: github.actor != 'github-classroom[bot]'",
+    "    steps:",
+    "      - name: Checkout code",
+    "        uses: actions/checkout@v4",
+    "        with:",
+    "          # Checkout with fetch depth 0 to get a full git history for commit counting",
+    "          fetch-depth: 0",
+    "",
+    "      - name: Install Rust toolchain",
+    "        uses: dtolnay/rust-toolchain@stable",
+    "        with:",
+    "          components: clippy,rustfmt",
+    "",
+];
+
+/// Full version: accepts shared `TriggerOption`s for all triggers
+pub fn get_yaml_preamble_with_options(
+    preset: Option<Preset>,
+    explicit_triggers: &[TriggerKind],
+    trigger_options: &[TriggerOption],
+) -> String {
+    let triggers = resolve_triggers(preset, explicit_triggers, trigger_options);
+
+    let mut lines = vec!["name: Autograding Tests".into()];
+    render_on_block(&triggers, &mut lines);
+    lines.extend(FIXED_PREAMBLE_TAIL.iter().map(|s| s.to_string()));
     lines.join("\n")
 }
 

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 
 use clap::{ArgAction, Args, Parser, Subcommand};
-use helpers::build::{Preset, Trigger};
+use helpers::build::{Preset, TriggerKind, collect_trigger_options};
 use helpers::init::RunConfig;
 
 pub mod build;
@@ -107,11 +107,25 @@ pub struct BuildArgs {
     /// Add one or more triggers (repository_dispatch is always included)
     /// e.g. --trigger push --trigger pull_request
     #[arg(long = "trigger", value_enum, action = ArgAction::Append)]
-    pub triggers: Vec<Trigger>,
+    pub triggers: Vec<TriggerKind>,
 
     /// Quick config for common classroom setups
     #[arg(long = "preset", value_enum)]
     pub preset: Option<Preset>,
+
+    /// Configure what branches cause pushes and PRs to run the autograder
+    #[arg(long = "branches", value_delimiter = ' ')]
+    pub branches: Vec<String>,
+
+    /// Configure which file changes cause pushes and PRs to run the autograder
+    /// e.g --trigger push --paths */mod.rs
+    #[arg(long = "paths", value_delimiter = ' ')]
+    pub paths: Vec<String>,
+
+    /// Configure while file changes should never cause the pushes and PRs to run the autograder
+    /// e.g --trigger push --paths-ignore README.md
+    #[arg(long = "paths-ignore", value_delimiter = ' ')]
+    pub paths_ignore: Vec<String>,
 }
 
 #[derive(Args, Debug)]
@@ -144,7 +158,12 @@ pub fn run() -> Result<()> {
             init::run(&cfg)
         }
         // Build has no args; default to current dir root like init would.
-        Command::Build(a) => build::run(&a.root, &a.triggers, &a.preset),
+        Command::Build(a) => build::run(
+            &a.root,
+            &a.triggers,
+            &a.preset,
+            &collect_trigger_options(&a),
+        ),
         Command::Table(a) => table::run(&a.root, !a.no_clipboard, a.to_readme),
         Command::Reset(a) => reset::run(&a.root),
     }
