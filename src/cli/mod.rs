@@ -107,8 +107,8 @@ pub struct BuildArgs {
     /// Add one or more event triggers (always includes `repository_dispatch`)
     ///
     /// Examples:
-    ///   --trigger push
-    ///   --trigger push --trigger pull-request
+    ///   --triggers push
+    ///   --triggers push --trigger pull-request
     #[arg(long = "triggers", value_enum, value_delimiter = ' ', num_args(1..) )]
     pub triggers: Vec<TriggerKind>,
 
