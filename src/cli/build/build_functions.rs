@@ -1,47 +1,101 @@
 use anyhow::{Context, Result};
+use std::collections::BTreeSet;
 use std::fs::{create_dir_all, write};
 use std::path::Path;
 // Import all utility script constants
+use crate::cli::helpers::build::{Preset, Trigger, TriggerKind, TriggerOption, resolve_triggers};
 use crate::utils::scripts::*;
-/// Generates the YAML preamble for the GitHub Actions workflow file.
-pub fn get_yaml_preamble(on_push: bool) -> String {
-    let mut triggers = vec!["repository_dispatch"];
 
-    if on_push {
-        triggers.push("push");
+/// Any trigger with options means we need the expanded `on:` block.
+fn needs_expanded_on(triggers: &BTreeSet<Trigger>) -> bool {
+    triggers.iter().any(|t| t.options_to_yaml_lines().is_some())
+}
+
+/// `on: [repository_dispatch, push, pull_request]`
+fn render_compact_on(triggers: &BTreeSet<Trigger>) -> String {
+    // NOTE: This assumes each trigger would render to a single token in compact form.
+    let mut tokens = Vec::with_capacity(triggers.len() + 1);
+    tokens.push("repository_dispatch".to_string());
+    for t in triggers {
+        tokens.push(t.kind.get_yaml_str());
     }
-    let triggers_joined = triggers.join(", ");
+    format!("on: [{}]", tokens.join(", "))
+}
 
-    let preamble = format!(
-        r#"name: Autograding Tests
-on: [{}]
+/// Expanded form:
+/// on:
+///   repository_dispatch:
+///   push:
+///     branches: [main]
+///     paths: [src/**]
+fn render_expanded_on(triggers: &std::collections::BTreeSet<Trigger>) -> Vec<String> {
+    let mut lines = vec!["on:".into(), "  repository_dispatch:".into()];
 
-permissions:
-  checks: write
-  actions: read
-  contents: read
+    for t in triggers {
+        match t.options_to_yaml_lines() {
+            None => {
+                // No options: emit just the mapping key
+                let key = t.kind.get_yaml_str();
+                lines.push(format!("  {}:", key));
+            }
+            Some(opts) => {
+                // With options: first the key line, then the options already formatted
+                lines.push(format!("  {}:", t.kind.get_yaml_str()));
+                for o in opts {
+                    lines.push(format!("    {}", o)); // options are already "key: [..]" lines
+                }
+            }
+        }
+    }
+    lines
+}
 
-jobs:
-  run-autograding-tests:
-    runs-on: ubuntu-latest
-    if: github.actor != 'github-classroom[bot]'
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          # Checkout with fetch depth 0 to get a full git history for commit counting
-          fetch-depth: 0
-    
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy,rustfmt
+/// Decide compact vs expanded and append to `out`.
+fn render_on_block(triggers: &std::collections::BTreeSet<Trigger>, out: &mut Vec<String>) {
+    if needs_expanded_on(triggers) {
+        out.extend(render_expanded_on(triggers));
+    } else {
+        out.push(render_compact_on(triggers));
+    }
+}
 
-"#,
-        triggers_joined
-    );
+const FIXED_PREAMBLE_TAIL: &[&str] = &[
+    "",
+    "permissions:",
+    "  checks: write",
+    "  actions: read",
+    "  contents: read",
+    "",
+    "jobs:",
+    "  run-autograding-tests:",
+    "    runs-on: ubuntu-latest",
+    "    if: github.actor != 'github-classroom[bot]'",
+    "    steps:",
+    "      - name: Checkout code",
+    "        uses: actions/checkout@v4",
+    "        with:",
+    "          # Checkout with fetch depth 0 to get a full git history for commit counting",
+    "          fetch-depth: 0",
+    "",
+    "      - name: Install Rust toolchain",
+    "        uses: dtolnay/rust-toolchain@stable",
+    "        with:",
+    "          components: clippy,rustfmt",
+    "",
+];
 
-    preamble
+/// Full version: accepts shared `TriggerOption`s for all triggers
+pub fn get_yaml_preamble_with_options(
+    preset: Option<Preset>,
+    explicit_triggers: &[TriggerKind],
+    trigger_options: &[TriggerOption],
+) -> String {
+    let triggers = resolve_triggers(preset, explicit_triggers, trigger_options);
+
+    let mut lines = vec!["name: Autograding Tests".into()];
+    render_on_block(&triggers, &mut lines);
+    lines.extend(FIXED_PREAMBLE_TAIL.iter().map(|s| s.to_string()));
+    lines.join("\n")
 }
 
 /// Shared function to write any script to the .autograder directory

@@ -1,10 +1,12 @@
 use anyhow::{Context, Result};
 use std::path::{Path, PathBuf};
 
+use super::helpers::build::{Preset, TriggerKind, TriggerOption};
 use crate::types::{AutoTest, TestKind};
 use crate::utils::{read_autograder_config, replace_double_hashtag, slug_id};
-
-use build_functions::{get_yaml_preamble, write_branch_count_shell, write_commit_count_shell};
+use build_functions::{
+    get_yaml_preamble_with_options, write_branch_count_shell, write_commit_count_shell,
+};
 use std::collections::{BTreeMap, HashMap};
 use std::fs::{File, create_dir_all};
 use steps::{CommandStep, CommandWith, ReporterStep};
@@ -12,7 +14,12 @@ use steps::{CommandStep, CommandWith, ReporterStep};
 mod build_functions;
 mod steps;
 
-pub fn run(root: &Path, grade_on_push: bool) -> Result<()> {
+pub fn run(
+    root: &Path,
+    triggers: &[TriggerKind],
+    preset: &Option<Preset>,
+    options: &[TriggerOption],
+) -> Result<()> {
     let tests = read_autograder_config(root)?;
     let workflows_dir = root.join(".github").join("workflows");
     create_dir_all(&workflows_dir)
@@ -22,7 +29,7 @@ pub fn run(root: &Path, grade_on_push: bool) -> Result<()> {
     let workflow_path = workflows_dir.join("classroom.yml");
 
     let mut yaml_compiler = YAMLAutograder::new(root.to_path_buf());
-    yaml_compiler.set_preamble(get_yaml_preamble(grade_on_push));
+    yaml_compiler.set_preamble(get_yaml_preamble_with_options(*preset, triggers, options));
     yaml_compiler.set_tests(tests);
     let workflow_content = yaml_compiler.compile();
 

@@ -9,6 +9,7 @@
 
 - [init](commands/init.md)
 - [build](commands/build.md)
+  - [More `build` Examples](commands/build_matrix.md)
 - [table](commands/table.md)
 - [reset](commands/reset.md)
 
