@@ -425,21 +425,65 @@ autograder-setup init --require-tests 3
 <li>Deprecated: <code>--num-commit-checks N</code> expands to thresholds <code>1..=N</code> (e.g., <code>--num-commit-checks 3</code> → <code>1 2 3</code>). Prefer <code>--require-commits</code> for explicit thresholds.</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="command-build"><a class="header" href="#command-build">Command: <code>build</code></a></h1>
-<p>Generates <code>.github/workflows/classroom.yaml</code> from <code>.autograder/autograder.json</code> (and a commit-count script if needed).</p>
+<p>Generates <code>.github/workflows/classroom.yaml</code> from <code>.autograder/autograder.json</code>
+(and a commit-count script if needed).</p>
 <h2 id="options-1"><a class="header" href="#options-1">Options</a></h2>
 <pre><code class="language-bash">-r, --root &lt;ROOT&gt;
-        Root of the Rust project (defaults to current directory) [default: .]
-    --grade-on-push
-        Have autograder run on push to any branch (default: grade only on "Grade All" or `repository_dispatch`)
+        Root directory of the Rust project (defaults to current directory)
+        [default: .]
+
+    --triggers &lt;TRIGGERS&gt;...
+        Add one or more event triggers (always includes `repository_dispatch`)
+
+        Examples:
+          --triggers push pull-request
+
+        Possible values:
+          - workflow-dispatch: Manual run via the Actions UI
+          - push:              Run on git push
+          - pull-request:      Run on PR events
+
+    --preset &lt;PRESET&gt;
+        Quick config for common classroom setups
+
+        Possible values:
+          - instructor:   Instructor-driven grading; manual-friendly
+          - student-push: Students get feedback on push
+          - student-pr:   Students get feedback on PRs
+
+    --branches &lt;BRANCHES&gt;...
+        Restrict pushes and PRs to these branches
+
+        Example:
+          --branches main feature
+
+    --paths &lt;PATHS&gt;...
+        Only grade when changes affect these files or paths
+
+        Example:
+          --paths src/** Cargo.toml
+
+    --paths-ignore &lt;PATHS_IGNORE&gt;...
+        Ignore pushes and PRs that *only* affect these files or paths
+
+        Example:
+          --paths-ignore README.md docs/**
+
 -h, --help
-        Print help
+        Print help (see a summary with '-h')
 </code></pre>
 <h2 id="examples-1"><a class="header" href="#examples-1">Examples</a></h2>
 <pre><code class="language-bash">autograder-setup build
 autograder-setup build --root ../student-assignment
 
-# Run on every push (small classes)
-autograder-setup build --grade-on-push
+# Run on every push and pull request
+autograder-setup build --triggers push pull-request
+
+# Restrict to main branch only
+autograder-setup build --triggers push pull-request --branches main
+
+# Ignore documentation-only changes
+autograder-setup build --triggers push --paths-ignore README.md docs/**
 </code></pre>
 <h2 id="workflow-details"><a class="header" href="#workflow-details">Workflow details</a></h2>
 <ul>
@@ -454,22 +498,25 @@ autograder-setup build --grade-on-push
 <li>Command: <code>cargo test &lt;name&gt;</code>.</li>
 </ul>
 <h3 id="workflow-triggers-on"><a class="header" href="#workflow-triggers-on">Workflow triggers (<code>on:</code>)</a></h3>
-<p>By default the generated workflow uses:</p>
+<blockquote>
+<p>By default, the generated workflow uses: <code>on: [repository_dispatch]</code>. This allows instructors to trigger grading manually from the Classroom UI.</p>
+</blockquote>
+<p>Running with flags modifies the triggers:</p>
 <ul>
-<li><code>on: [repository_dispatch]</code> — this lets instructors trigger grading from the classroom UI or a manual dispatch without running on every push.</li>
-</ul>
-<p>Running <code>autograder-setup build --grade-on-push</code>, the trigger will change to :</p>
-<ul>
-<li><code>on: [repository_dispatch, push]</code> — the workflow will also run on every push to the repository (all branches).</li>
+<li><code>--triggers push</code> — run the autograder on every push.</li>
+<li><code>--triggers push pull-request</code> — run on every push and pull request.</li>
+<li><code>--branches</code> — restrict which branches are eligible for push/PR grading.</li>
+<li><code>--paths</code> and <code>--paths-ignore</code> — limit workflow runs to specific file changes.</li>
 </ul>
 <p>Notes about choosing triggers:</p>
 <ul>
-<li><code>repository_dispatch</code> is the safe default for instructor-initiated grading (avoid running CI for every student push and balooning compute costs)</li>
-<li><code>--grade-on-push</code> is convenient for immediate feedback during development but may increase CI usage and spurious runs; consider branch/paths filters if you want to limit when pushes trigger the autograder.</li>
+<li><code>repository_dispatch</code> is the safe default for instructor-initiated grading (avoids CI load on every push).</li>
+<li><code>push</code> or <code>pull-request</code> triggers give students instant feedback but increase compute usage.</li>
+<li>Combine <code>--branches</code>, <code>--paths</code>, and <code>--paths-ignore</code> to control when grading runs.</li>
 </ul>
 <h2 id="example-workflow-yaml"><a class="header" href="#example-workflow-yaml">Example Workflow YAML</a></h2>
 <pre><code class="language-yaml">name: Autograding Tests
-on: [repository_dispatch]
+on: [repository_dispatch, push]
 
 permissions:
   checks: write
@@ -483,6 +530,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -517,6 +566,98 @@ jobs:
         with:
           runners: basic-add-small-numbers,clippy-style-check
 </code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="build-usage-matrix"><a class="header" href="#build-usage-matrix"><code>build</code> usage matrix</a></h1>
+<p>This matrix maps common scenarios to the flags you pass, what triggers resolve to,
+and what the generated <code>on:</code> block looks like.</p>
+<div class="table-wrapper"><table><thead><tr><th>Scenario</th><th>CLI flags</th><th>Filters applied</th><th>Resulting <code>on:</code> block</th></tr></thead><tbody>
+<tr><td>Instructor-only (manual)</td><td><em>(none)</em></td><td>—</td><td><code>on: [repository_dispatch]</code></td></tr>
+<tr><td>Instructor preset</td><td><code>--preset instructor</code></td><td>—</td><td><code>on: [repository_dispatch, workflow_dispatch]</code></td></tr>
+<tr><td>Push only</td><td><code>--triggers push</code></td><td>—</td><td><code>on: [repository_dispatch, push]</code></td></tr>
+<tr><td>Pull request only</td><td><code>--triggers pull-request</code></td><td>—</td><td><code>on: [repository_dispatch, pull_request]</code></td></tr>
+<tr><td>Push + PR (student feedback)</td><td><code>--triggers push pull-request</code></td><td>—</td><td><code>on: [repository_dispatch, push, pull_request]</code></td></tr>
+<tr><td>Student push preset</td><td><code>--preset student-push</code></td><td>—</td><td><code>on: [repository_dispatch, push]</code></td></tr>
+<tr><td>Student PR preset</td><td><code>--preset student-pr</code></td><td>—</td><td><code>on: [repository_dispatch, pull_request]</code></td></tr>
+<tr><td>Branch-limited (main only)</td><td><code>--triggers push pull-request --branches main</code></td><td><code>branches: [main]</code></td><td>See <a href="commands/build_matrix.html#example-a">Example A</a></td></tr>
+<tr><td>Branch-limited (main &amp; feature)</td><td><code>--triggers push pull-request --branches main feature</code></td><td><code>branches: [main, feature]</code></td><td>See <a href="commands/build_matrix.html#example-b">Example B</a></td></tr>
+<tr><td>Run only when certain files change</td><td><code>--triggers push --paths src/** Cargo.toml</code></td><td><code>paths: [src/**, Cargo.toml]</code></td><td>See <a href="commands/build_matrix.html#example-c">Example C</a></td></tr>
+<tr><td>Ignore doc-only changes</td><td><code>--triggers push --paths-ignore README.md docs/**</code></td><td><code>paths-ignore: [README.md, docs/**]</code></td><td>See <a href="commands/build_matrix.html#example-d">Example D</a></td></tr>
+<tr><td>Combine paths + branches</td><td><code>--triggers pull-request --branches main --paths src/**</code></td><td><code>branches: [main], paths: [src/**]</code></td><td>See <a href="commands/build_matrix.html#example-e">Example E</a></td></tr>
+<tr><td>Everything together</td><td><code>--triggers push pull-request --branches main release --paths src/** Cargo.toml --paths-ignore README.md</code></td><td><code>branches, paths, paths-ignore</code></td><td>See <a href="commands/build_matrix.html#example-f-putting-it-all-together">Example F</a></td></tr>
+</tbody></table>
+</div>
+<h2 id="advanced-build-yaml-examples"><a class="header" href="#advanced-build-yaml-examples">Advanced Build YAML Examples</a></h2>
+<h3 id="example-a"><a class="header" href="#example-a">Example A</a></h3>
+<pre><code class="language-bash">autograder-setup build --triggers push pull-request --branches main
+</code></pre>
+<p>Runs the autograder on both pushes and pull requests, but only for the <code>main</code> branch.</p>
+<pre><code class="language-yaml">on:
+  repository_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+</code></pre>
+<h3 id="example-b"><a class="header" href="#example-b">Example B</a></h3>
+<pre><code class="language-bash">autograder-setup build --triggers push pull-request --branches main feature
+</code></pre>
+<p>Same as Example A, but allow grading on multiple branches — here, both <code>main</code> and <code>feature</code>.</p>
+<pre><code class="language-yaml">on:
+  repository_dispatch:
+  push:
+    branches: [main, feature]
+  pull_request:
+    branches: [main, feature]
+</code></pre>
+<h3 id="example-c"><a class="header" href="#example-c">Example C</a></h3>
+<pre><code class="language-bash">autograder-setup build --triggers push --paths src/** Cargo.toml
+</code></pre>
+<p>Run the autograder only when commits modify source files or the manifest (<code>Cargo.toml</code>).</p>
+<pre><code class="language-yaml">on:
+  repository_dispatch:
+  push:
+    paths: [src/**, Cargo.toml]
+</code></pre>
+<h3 id="example-d"><a class="header" href="#example-d">Example D</a></h3>
+<pre><code class="language-bash">autograder-setup build --triggers push --paths-ignore README.md docs/**
+</code></pre>
+<p>Ignore pushes that only change documentation or the README.</p>
+<pre><code class="language-yaml">on:
+  repository_dispatch:
+  push:
+    paths-ignore: [README.md, docs/**]
+</code></pre>
+<h3 id="example-e"><a class="header" href="#example-e">Example E</a></h3>
+<pre><code class="language-bash">autograder-setup build --triggers pull-request --branches main --paths src/**`
+</code></pre>
+<p>Run the autograder for pull requests into <code>main</code>, but only when code files are modified.</p>
+<pre><code class="language-yaml">on:
+  repository_dispatch:
+  pull_request:
+    branches: [main]
+    paths: [src/**]
+</code></pre>
+<h3 id="example-f-putting-it-all-together"><a class="header" href="#example-f-putting-it-all-together">Example F: Putting It All Together</a></h3>
+<p>Using the command</p>
+<pre><code class="language-bash">autograder-setup build --triggers push pull-request \
+    --branches main release --paths src/** Cargo.toml \
+    --paths-ignore README.md
+</code></pre>
+<p>We can combine all filters for fine-grained control: grade only on code changes to <code>main</code> or <code>release</code> branches, ignoring documentation-only updates.</p>
+<pre><code class="language-yaml">on:
+  repository_dispatch:
+  push:
+    branches: [main, release]
+    paths: [src/**, Cargo.toml]
+    paths-ignore: [README.md]
+  pull_request:
+    branches: [main, release]
+    paths: [src/**, Cargo.toml]
+    paths-ignore: [README.md]
+</code></pre>
+<p>All options can be further tweaked in the YAML for additional refinement, such as <em>grading different branches for pushes and pull requests</em></p>
+<blockquote>
+<p>Do these calls feel verbose? Feel free to open an issue for commonly used build patterns to improve our <em>presets</em> options!</p>
+</blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="command-table"><a class="header" href="#command-table">Command: <code>table</code></a></h1>
 <p>Reads <code>.autograder/autograder.json</code> and generates a Markdown table of test names, descriptions, and points.</p>
 <h2 id="options-2"><a class="header" href="#options-2">Options</a></h2>
