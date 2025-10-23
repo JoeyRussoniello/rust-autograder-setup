@@ -16,10 +16,10 @@ A tiny Rust CLI that bootstraps **GitHub Classroom autograding for Rust projects
 
 ## Key Features
 
-- ⚡ **Fast setup** — go from repo → Classroom-ready assignment in under 60 seconds.  
-- 📝 **Flexible outputs** — grading tables copied to clipboard *or* written directly to your README.  
-- 🏎️ **Optimized CI** — precompiled YAMLs (no runtime parsing) for faster, cheaper runs.  
-- 🔧 **Instructor-friendly CLI** — `init`, `build`, `table`, `reset` cover the full workflow.  
+-  **Fast setup** — go from repo → Classroom-ready assignment in under 60 seconds.  
+-  **Flexible outputs** — grading tables copied to clipboard *or* written directly to your README.  
+-  **Optimized CI** — precompiled YAMLs (no runtime parsing) for faster, cheaper runs.  
+-  **Instructor-friendly CLI** — `init`, `build`, `table`, `reset` cover the full workflow.  
 
 ## How it Works
 
@@ -166,3 +166,4 @@ For a full CLI guide and usage instructions, see the [Complete Documentation](ht
 ## Upcoming Features
 
 - Additional CLI improvements and configuration options
+
