@@ -1,4 +1,5 @@
 use crate::cli::BuildArgs;
+use crate::utils::yaml_quote;
 use clap::ValueEnum;
 use std::collections::BTreeSet;
 #[derive(Copy, Clone, Debug, ValueEnum, Eq, PartialEq, Hash, PartialOrd, Ord)]
@@ -31,12 +32,17 @@ pub enum TriggerOption {
     PathsIgnore(Vec<String>), // push / pull_request
 }
 
+/// A helper function to surround necessary triggers with quotes 
+fn quote_all(options: &Vec<String>) -> Vec<String>{
+    options.iter().map(|o| yaml_quote(o)).collect()
+}
 impl TriggerOption {
     fn get_yaml_str(&self) -> Option<String> {
         let (header_str, options_vec) = match self {
             Self::Branches(v) => ("branches", v),
-            Self::Paths(v) => ("paths", v),
-            Self::PathsIgnore(v) => ("paths-ignore", v),
+            // * Surround paths in quotes
+            Self::Paths(v) => ("paths", &quote_all(v)),
+            Self::PathsIgnore(v) => ("paths-ignore", &quote_all(v)),
         };
 
         // Don't accidentally return branches: [], as that is invalid yaml
